@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	dbusInterface = "org.chromium.UpdateEngineInterface"
-	dbusPath = "/org/chromium/UpdateEngineInterface"
+	dbusInterface = "com.coreos.update1.Engine"
+	dbusPath = "/com/coreos/update1/Engine"
 	dbusMember = "StatusUpdate"
 	dbusMemberInterface = dbusInterface + "." + dbusMember
 	signalBuffer = 32 // TODO(bp): What is a reasonable value here?
@@ -25,24 +25,27 @@ type Client struct {
 func New() (c *Client, err error) {
 	c = new(Client)
 
-	conn, err := dbus.SystemBusPrivate()
+	c.conn, err = dbus.SystemBusPrivate()
 	if err != nil {
 		c.conn.Close()
 		return nil, err
 	}
 
 	methods := []dbus.Auth{dbus.AuthExternal(strconv.Itoa(os.Getuid()))}
-	err = conn.Auth(methods)
+	err = c.conn.Auth(methods)
 	if err != nil {
 		c.conn.Close()
 		return nil, err
 	}
 
-	err = conn.Hello()
+	err = c.conn.Hello()
 	if err != nil {
 		c.conn.Close()
 		return nil, err
 	}
+
+	c.object = c.conn.Object("com.coreos.update1.Engine",
+		dbus.ObjectPath("/com/coreos/update1/Engine"))
 
 	// Setup the filter for the StatusUpdate signals
 	match := fmt.Sprintf("type='signal',interface='%s',member='%s'", dbusInterface, dbusMember)
@@ -51,7 +54,6 @@ func New() (c *Client, err error) {
 		return nil, err
 	}
 
-	c.conn = conn
 	c.ch = make(chan *dbus.Signal, signalBuffer)
 	c.conn.Signal(c.ch)
 
@@ -69,6 +71,17 @@ func (c *Client) RebootNeededSignal(rcvr chan bool) {
 			}
 		}
 	}
+}
+
+func (c *Client) GetStatus() error {
+	result := make([][]interface{}, 0)
+	err := c.object.Call("com.coreos.update1.Engine.GetStatus", 0).Store(&result)
+	if err != nil {
+		return err
+	}
+	println(result)
+
+	return nil
 }
 
 func (c *Client) Close() {
