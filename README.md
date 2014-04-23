@@ -13,18 +13,18 @@ $ rebootlockctl status
 Available: 0
 Max: 1
 
-MACHINE					INDEX	TIME
-69d27b356a94476da859461d3a3bc6fd	9583	Mon Apr 14 10:41:23 PDT 2014
+MACHINE
+69d27b356a94476da859461d3a3bc6fd
 ```
 
-### Clear Holders
+### Unlock Holders
 
 In some cases a machine may go away permanently or semi-permanently while
 holding a reboot lock. A system administrator can clear this lock using the
-clear command.
+unlock command.
 
 ```
-$ rebootlockctl clear 69d27b356a94476da859461d3a3bc6fd
+$ rebootlockctl unlock 69d27b356a94476da859461d3a3bc6fd
 ```
 
 ### Maximum Sempahore
