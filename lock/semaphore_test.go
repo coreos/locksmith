@@ -5,7 +5,7 @@ import (
 )
 
 type testLockClient struct {
-	sem *Semaphore
+	sem     *Semaphore
 	holders []holder
 }
 
@@ -62,7 +62,7 @@ func TestSingleDeadlock(t *testing.T) {
 	if err := al.Lock(); err != nil {
 		t.Error(err)
 	}
-	
+
 	if err := al.Lock(); err == nil {
 		t.Error(err)
 	}
@@ -143,7 +143,7 @@ func TestDoubleLockSuccess(t *testing.T) {
 	// TODO(philips): make setmax it's own test
 	for i := range []int{3, 2, 1, 0, -1, 0, 1, 2, 3} {
 		al.SetMax(i)
-		if c.sem.Semaphore != i - 1 {
+		if c.sem.Semaphore != i-1 {
 			t.Error("SetMax did not increment the semaphore")
 		}
 	}

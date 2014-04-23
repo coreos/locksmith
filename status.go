@@ -9,11 +9,10 @@ import (
 
 var (
 	cmdStatus = &Command{
-		Name:    "status",
-		Summary: "Get the status of the cluster wide reboot lock.",
-		Description:
-`Status will return the number of locks that are held and available and a list of the holders.`,
-		Run: runStatus,
+		Name:        "status",
+		Summary:     "Get the status of the cluster wide reboot lock.",
+		Description: `Status will return the number of locks that are held and available and a list of the holders.`,
+		Run:         runStatus,
 	}
 )
 

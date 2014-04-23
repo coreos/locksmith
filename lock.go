@@ -13,8 +13,7 @@ var (
 		Name:    "lock",
 		Summary: "Lock this machine or a given machine-id for reboot.",
 		Usage:   "<machine-id>",
-		Description:
-`Lock is for manual locking of the reboot lock for this machine or a given
+		Description: `Lock is for manual locking of the reboot lock for this machine or a given
 machine-id. Under normal operation this should not be necessary.`,
 		Run: runLock,
 	}

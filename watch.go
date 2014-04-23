@@ -4,14 +4,12 @@ import (
 	"github.com/philips/focaccia/updateengine"
 )
 
-
 var (
 	cmdWatch = &Command{
 		Name:    "watch",
 		Summary: "Watch for reboot needed signal and if reboot able.",
 		Usage:   "UNIT",
-		Description:
-`Watch waits for the reboot needed signal coming out of update engine and
+		Description: `Watch waits for the reboot needed signal coming out of update engine and
 attempts to acquire the reboot lock. If the reboot lock is acquired then the
 machine will reboot.`,
 		Run: runWatch,

@@ -8,18 +8,18 @@ import (
 )
 
 const (
-	dbusInterface = "com.coreos.update1.Engine"
-	dbusPath = "/com/coreos/update1/Engine"
-	dbusMember = "StatusUpdate"
-	dbusMemberInterface = dbusInterface + "." + dbusMember
-	signalBuffer = 32 // TODO(bp): What is a reasonable value here?
+	dbusInterface                 = "com.coreos.update1.Engine"
+	dbusPath                      = "/com/coreos/update1/Engine"
+	dbusMember                    = "StatusUpdate"
+	dbusMemberInterface           = dbusInterface + "." + dbusMember
+	signalBuffer                  = 32 // TODO(bp): What is a reasonable value here?
 	UpdateStatusUpdatedNeedReboot = "UPDATE_STATUS_UPDATED_NEED_REBOOT"
 )
 
 type Client struct {
-	conn *dbus.Conn
+	conn   *dbus.Conn
 	object *dbus.Object
-	ch chan *dbus.Signal
+	ch     chan *dbus.Signal
 }
 
 func New() (c *Client, err error) {

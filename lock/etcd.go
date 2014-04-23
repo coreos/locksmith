@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	keyPrefix = "coreos.com/updateengine/rebootlock"
-	holdersPrefix = keyPrefix + "/holders"
+	keyPrefix       = "coreos.com/updateengine/rebootlock"
+	holdersPrefix   = keyPrefix + "/holders"
 	SemaphorePrefix = keyPrefix + "/sempahore"
 )
 
@@ -36,7 +36,7 @@ func (c *EtcdLockClient) Init() (err error) {
 		return err
 	}
 
-	// TODO(philips): 
+	// TODO(philips):
 	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
 	if err != nil {
 		eerr, ok := err.(*etcd.EtcdError)

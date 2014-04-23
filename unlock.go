@@ -13,8 +13,7 @@ var (
 		Name:    "unlock",
 		Summary: "Unlock this machine or a given machine-id for reboot.",
 		Usage:   "<machine-id>",
-		Description:
-`Unlock is for manual unlocking of the reboot unlock for this machine or a
+		Description: `Unlock is for manual unlocking of the reboot unlock for this machine or a
 given machine-id. Under normal operation this should not be necessary.`,
 		Run: runUnlock,
 	}

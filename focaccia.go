@@ -8,14 +8,14 @@ import (
 )
 
 const (
-	cliName = "focaccia"
+	cliName        = "focaccia"
 	cliDescription = `Manage the cluster wide reboot lock.`
 )
 
 var (
 	out *tabwriter.Writer
 
-	commands []*Command
+	commands      []*Command
 	globalFlagset *flag.FlagSet = flag.NewFlagSet("focaccia", flag.ExitOnError)
 
 	globalFlags = struct {
@@ -29,7 +29,7 @@ func init() {
 
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
-	commands = []*Command {
+	commands = []*Command{
 		cmdHelp,
 		cmdLock,
 		cmdSetMax,
@@ -40,12 +40,12 @@ func init() {
 }
 
 type Command struct {
-	Name        string       // Name of the Command and the string to use to invoke it
-	Summary     string       // One-sentence summary of what the Command does
-	Usage       string       // Usage options/arguments
-	Description string       // Detailed description of command
-	Flags       flag.FlagSet // Set of flags associated with this command
-	Run func(args []string) int // Run a command with the given arguments, return exit status
+	Name        string                  // Name of the Command and the string to use to invoke it
+	Summary     string                  // One-sentence summary of what the Command does
+	Usage       string                  // Usage options/arguments
+	Description string                  // Detailed description of command
+	Flags       flag.FlagSet            // Set of flags associated with this command
+	Run         func(args []string) int // Run a command with the given arguments, return exit status
 }
 
 func getAllFlags() (flags []*flag.Flag) {
@@ -59,8 +59,6 @@ func getFlags(flagset *flag.FlagSet) (flags []*flag.Flag) {
 	})
 	return
 }
-
-
 
 func main() {
 	globalFlagset.Parse(os.Args[1:])

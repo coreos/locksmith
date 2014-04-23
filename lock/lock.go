@@ -1,7 +1,7 @@
 package lock
 
 type Lock struct {
-	id string
+	id     string
 	client LockClient
 }
 
@@ -39,7 +39,7 @@ func (l *Lock) Get() (sem *Semaphore, err error) {
 func (l *Lock) SetMax(max int) (sem *Semaphore, oldMax int, err error) {
 	var (
 		semRet *Semaphore
-		old int
+		old    int
 	)
 
 	return semRet, old, l.store(func(sem *Semaphore) error {

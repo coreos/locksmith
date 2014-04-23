@@ -7,10 +7,10 @@ import (
 )
 
 type Semaphore struct {
-	Index uint64 `json:"-"`
-	Semaphore int `json:"semaphore"`
-	Max int `json:"max"`
-	Holders []string `json:"holders"`
+	Index     uint64   `json:"-"`
+	Semaphore int      `json:"semaphore"`
+	Max       int      `json:"max"`
+	Holders   []string `json:"holders"`
 }
 
 func (s *Semaphore) SetMax(max int) error {
@@ -18,7 +18,7 @@ func (s *Semaphore) SetMax(max int) error {
 
 	s.Semaphore = s.Semaphore - diff
 	s.Max = s.Max - diff
-	
+
 	return nil
 }
 
@@ -52,7 +52,7 @@ func (s *Semaphore) removeHolder(h string) error {
 	} else {
 		return errors.New("Lock not held.")
 	}
-	
+
 	return nil
 }
 
@@ -85,6 +85,6 @@ func newSemaphore() (sem *Semaphore) {
 }
 
 type holder struct {
-	ID string `json:"-"`
-	StartTime int64 `json:"startTime"`
+	ID        string `json:"-"`
+	StartTime int64  `json:"startTime"`
 }

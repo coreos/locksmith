@@ -13,8 +13,7 @@ var (
 		Name:    "set-max",
 		Summary: "Set the maximum number of lock holders",
 		Usage:   "UNIT",
-		Description:
-`Set the maximum number of machines that can be rebooting at a given time. This
+		Description: `Set the maximum number of machines that can be rebooting at a given time. This
 can be set at any time and will not affect current holders of the lock.`,
 		Run: runSetMax,
 	}
