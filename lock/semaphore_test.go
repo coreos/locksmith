@@ -5,20 +5,20 @@ import (
 )
 
 type testLockClient struct {
-	sem *semaphore
+	sem *Semaphore
 	holders []holder
 }
 
 func (c *testLockClient) Init() (err error) {
 	c.sem = newSemaphore()
+	return nil
+}
+
+func (c *testLockClient) Get() (sem *Semaphore, err error) {
 	return c.sem, nil
 }
 
-func (c *testLockClient) Get() (sem *semaphore, err error) {
-	return c.sem, nil
-}
-
-func (c *testLockClient) Set(sem *semaphore) (err error) {
+func (c *testLockClient) Set(sem *Semaphore) (err error) {
 	c.sem = sem
 	return nil
 }
