@@ -10,7 +10,7 @@ import (
 const (
 	keyPrefix = "coreos.com/updateengine/rebootlock"
 	holdersPrefix = keyPrefix + "/holders"
-	semaphorePrefix = keyPrefix + "/sempahore"
+	SemaphorePrefix = keyPrefix + "/sempahore"
 )
 
 // EtcdLockClient is a wrapper around the go-etcd client that provides
@@ -37,7 +37,7 @@ func (c *EtcdLockClient) Init() (err error) {
 	}
 
 	// TODO(philips): 
-	_, err = c.client.Create(semaphorePrefix, string(b), 0)
+	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
 	if err != nil {
 		eerr, ok := err.(*etcd.EtcdError)
 		if ok && eerr.ErrorCode == etcdError.EcodeNodeExist {
@@ -48,14 +48,14 @@ func (c *EtcdLockClient) Init() (err error) {
 	return err
 }
 
-// Get fetches the semaphore from etcd.
-func (c *EtcdLockClient) Get() (sem *semaphore, err error) {
-	resp, err := c.client.Get(semaphorePrefix, false, false)
+// Get fetches the Semaphore from etcd.
+func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
+	resp, err := c.client.Get(SemaphorePrefix, false, false)
 	if err != nil {
 		return nil, err
 	}
 
-	sem = &semaphore{}
+	sem = &Semaphore{}
 	err = json.Unmarshal([]byte(resp.Node.Value), sem)
 	if err != nil {
 		return nil, err
@@ -66,14 +66,14 @@ func (c *EtcdLockClient) Get() (sem *semaphore, err error) {
 	return sem, nil
 }
 
-// Set sets a semaphore in etcd.
-func (c *EtcdLockClient) Set(sem *semaphore) (err error) {
+// Set sets a Semaphore in etcd.
+func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
 	b, err := json.Marshal(sem)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.client.CompareAndSwap(semaphorePrefix, string(b), 0, "", sem.Index)
+	_, err = c.client.CompareAndSwap(SemaphorePrefix, string(b), 0, "", sem.Index)
 
 	return nil
 }

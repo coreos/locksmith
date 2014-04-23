@@ -34,10 +34,13 @@ func runSetMax(args []string) (exit int) {
 		return 1
 	}
 
-	err = l.SetMax(max)
+	sem, old, err := l.SetMax(max)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error setting value: %s", err)
 	}
+
+	fmt.Println("Old-Max:", old)
+	fmt.Println("Max:", sem.Max)
 
 	return
 }

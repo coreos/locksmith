@@ -1,18 +1,19 @@
 package lock
 
 import (
+	"encoding/json"
 	"errors"
 	"sort"
 )
 
-type semaphore struct {
+type Semaphore struct {
 	Index uint64 `json:"-"`
 	Semaphore int `json:"semaphore"`
 	Max int `json:"max"`
 	Holders []string `json:"holders"`
 }
 
-func (s *semaphore) SetMax(max int) error {
+func (s *Semaphore) SetMax(max int) error {
 	diff := s.Max - max
 
 	s.Semaphore = s.Semaphore - diff
@@ -21,7 +22,12 @@ func (s *semaphore) SetMax(max int) error {
 	return nil
 }
 
-func (s *semaphore) addHolder(h string) error {
+func (s *Semaphore) String() string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
+
+func (s *Semaphore) addHolder(h string) error {
 	loc := sort.SearchStrings(s.Holders, h)
 	switch {
 	case loc == len(s.Holders):
@@ -35,7 +41,7 @@ func (s *semaphore) addHolder(h string) error {
 	return nil
 }
 
-func (s *semaphore) removeHolder(h string) error {
+func (s *Semaphore) removeHolder(h string) error {
 	loc := sort.SearchStrings(s.Holders, h)
 	if s.Holders[loc] == h {
 		s.Holders = append(s.Holders[:loc], s.Holders[loc+1:]...)
@@ -46,7 +52,7 @@ func (s *semaphore) removeHolder(h string) error {
 	return nil
 }
 
-func (s *semaphore) Lock(h string) error {
+func (s *Semaphore) Lock(h string) error {
 	if s.Semaphore <= 0 {
 		return errors.New("Semaphore is at 0")
 	}
@@ -60,7 +66,7 @@ func (s *semaphore) Lock(h string) error {
 	return nil
 }
 
-func (s *semaphore) Unlock(h string) error {
+func (s *Semaphore) Unlock(h string) error {
 	if err := s.removeHolder(h); err != nil {
 		return err
 	}
@@ -70,8 +76,8 @@ func (s *semaphore) Unlock(h string) error {
 	return nil
 }
 
-func newSemaphore() (sem *semaphore) {
-	return &semaphore{0, 1, 1, nil}
+func newSemaphore() (sem *Semaphore) {
+	return &Semaphore{0, 1, 1, nil}
 }
 
 type holder struct {

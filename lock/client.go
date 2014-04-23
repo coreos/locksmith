@@ -2,6 +2,6 @@ package lock
 
 type LockClient interface {
 	Init() (error)
-	Get() (*semaphore, error)
-	Set(*semaphore) (error)
+	Get() (*Semaphore, error)
+	Set(*Semaphore) (error)
 }

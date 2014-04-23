@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"text/tabwriter"
 )
 
 const (
@@ -12,6 +13,8 @@ const (
 )
 
 var (
+	out *tabwriter.Writer
+
 	commands []*Command
 	globalFlagset *flag.FlagSet = flag.NewFlagSet("focaccia", flag.ExitOnError)
 
@@ -21,11 +24,15 @@ var (
 )
 
 func init() {
+	out = new(tabwriter.Writer)
+	out.Init(os.Stdout, 0, 8, 1, '\t', 0)
+
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
 	commands = []*Command {
 		cmdHelp,
 		cmdSetMax,
+		cmdStatus,
 		cmdWatch,
 	}
 }
