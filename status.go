@@ -11,16 +11,22 @@ var (
 	cmdStatus = &Command{
 		Name:    "status",
 		Summary: "Get the status of the cluster wide reboot lock.",
-		Usage:   "UNIT",
 		Description:
 `Status will return the number of locks that are held and available and a list of the holders.`,
 		Run: runStatus,
 	}
 )
 
+func printHolders(sem *lock.Semaphore) {
+	fmt.Fprintln(out, "MACHINE")
+	for _, h := range sem.Holders {
+		fmt.Fprintln(out, h)
+	}
+}
+
 func runStatus(args []string) (exit int) {
 	elc, _ := lock.NewEtcdLockClient(nil)
-	l := lock.New("hi", elc)
+	l := lock.New("", elc)
 
 	sem, err := l.Get()
 	if err != nil {
@@ -30,7 +36,10 @@ func runStatus(args []string) (exit int) {
 	fmt.Println("Available:", sem.Semaphore)
 	fmt.Println("Max:", sem.Semaphore)
 
-	
+	if len(sem.Holders) > 0 {
+		fmt.Fprintln(out, "")
+		printHolders(sem)
+	}
 
 	return
 }
