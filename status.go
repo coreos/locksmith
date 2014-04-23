@@ -17,7 +17,7 @@ var (
 )
 
 func printHolders(sem *lock.Semaphore) {
-	fmt.Fprintln(out, "MACHINE")
+	fmt.Fprintln(out, "MACHINE ID")
 	for _, h := range sem.Holders {
 		fmt.Fprintln(out, h)
 	}

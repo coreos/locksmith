@@ -13,7 +13,7 @@ $ rebootlockctl status
 Available: 0
 Max: 1
 
-MACHINE
+MACHINE ID
 69d27b356a94476da859461d3a3bc6fd
 ```
 
