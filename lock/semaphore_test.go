@@ -9,7 +9,7 @@ type testLockClient struct {
 	holders []holder
 }
 
-func (c *testLockClient) Init() (sem *semaphore, err error) {
+func (c *testLockClient) Init() (err error) {
 	c.sem = newSemaphore()
 	return c.sem, nil
 }

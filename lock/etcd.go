@@ -2,6 +2,8 @@ package lock
 
 import (
 	"encoding/json"
+
+	etcdError "github.com/coreos/etcd/error"
 	"github.com/coreos/go-etcd/etcd"
 )
 
@@ -18,23 +20,32 @@ type EtcdLockClient struct {
 	client *etcd.Client
 }
 
-func NewEtcdLockClient(machines []string) (client *EtcdLockClient) {
+func NewEtcdLockClient(machines []string) (client *EtcdLockClient, err error) {
 	ec := etcd.NewClient(machines)
+	client = &EtcdLockClient{ec}
+	err = client.Init()
 
-	return &EtcdLockClient{ec}
+	return client, err
 }
 
 // Init sets an initial copy of the sempahore if it doesn't exist yet.
-func (c *EtcdLockClient) Init() (sem *semaphore, err error) {
-	sem = newSemaphore()
+func (c *EtcdLockClient) Init() (err error) {
+	sem := newSemaphore()
 	b, err := json.Marshal(sem)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	c.client.Create(semaphorePrefix, string(b), 0)
+	// TODO(philips): 
+	_, err = c.client.Create(semaphorePrefix, string(b), 0)
+	if err != nil {
+		eerr, ok := err.(*etcd.EtcdError)
+		if ok && eerr.ErrorCode == etcdError.EcodeNodeExist {
+			return nil
+		}
+	}
 
-	return sem, nil
+	return err
 }
 
 // Get fetches the semaphore from etcd.
