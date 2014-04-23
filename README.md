@@ -1,13 +1,15 @@
-# focaccia
+# rebootlockd
 
-Foccaccia is a reboot manager for the CoreOS update engine using etcd.
+rebootlockd is a reboot manager for the CoreOS update engine which uses
+etcd to ensure that only a subset of a cluster of machines is rebooting
+at any given time.
 
 ## Usage
 
 ### Listing the Holders
 
 ```
-$ foccacia status
+$ rebootlockctl status
 Available: 0
 Max: 1
 
@@ -22,17 +24,17 @@ holding a reboot lock. A system administrator can clear this lock using the
 clear command.
 
 ```
-$ foccacia clear 69d27b356a94476da859461d3a3bc6fd
+$ rebootlockctl clear 69d27b356a94476da859461d3a3bc6fd
 ```
 
 ### Maximum Sempahore
 
-By default the reboot lock only holds allows a single holder. However, a user
-may want more than a single machine to be upgrading at a time. This can be done
-by increasing the semaphore count.
+By default the reboot lock only allows a single holder. However, a user may
+want more than a single machine to be upgrading at a time. This can be done by
+increasing the semaphore count.
 
 ```
-$ foccacia set-semaphore-max 4
+$ rebootlockctl set-max 4
 Old: 1
 New: 4
 ```
@@ -49,7 +51,8 @@ swap to take the lock. When it is first created it will be initialized like so:
 ```json
 {
 	"semaphore": 1,
-	"max": 1
+	"max": 1,
+	"holders": []
 }
 ```
 
@@ -58,7 +61,10 @@ To take the lock a client the document will be swaped with this:
 ```json
 {
 	"semaphore": 0,
-	"max": 1
+	"max": 1,
+	"holders": [
+		"69d27b356a94476da859461d3a3bc6fd"
+	]
 }
 ```
 
@@ -66,13 +72,13 @@ To take the lock a client the document will be swaped with this:
 
 Key: `coreos.com/updateengine/rebootlock/holders/<machineID>`
 
+
 When a rebootlock client takes the lock it should write information about
 itself to the holders directory. This should be a JSON document with the
 following information:
 
 ```json
 {
-	"semaphoreIndex": "9583",
 	"machineID": "69d27b356a94476da859461d3a3bc6fd",
 	"startTime": 1397496396
 }
