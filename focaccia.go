@@ -7,13 +7,13 @@ import (
 )
 
 const (
-	cliName = "rebootlockctl"
-
+	cliName = "focaccia"
+	cliDescription = `Manage the cluster wide reboot lock.`
 )
 
 var (
 	commands []*Command
-	globalFlagset *flag.FlagSet = flag.NewFlagSet("rebootlockctl", flag.ExitOnError)
+	globalFlagset *flag.FlagSet = flag.NewFlagSet("focaccia", flag.ExitOnError)
 
 	globalFlags = struct {
 		Debug bool
@@ -24,8 +24,9 @@ func init() {
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
 	commands = []*Command {
-		cmdWatch,
+		cmdHelp,
 		cmdSetMax,
+		cmdWatch,
 	}
 }
 
@@ -37,6 +38,19 @@ type Command struct {
 	Flags       flag.FlagSet // Set of flags associated with this command
 	Run func(args []string) int // Run a command with the given arguments, return exit status
 }
+
+func getAllFlags() (flags []*flag.Flag) {
+	return getFlags(globalFlagset)
+}
+
+func getFlags(flagset *flag.FlagSet) (flags []*flag.Flag) {
+	flags = make([]*flag.Flag, 0)
+	flagset.VisitAll(func(f *flag.Flag) {
+		flags = append(flags, f)
+	})
+	return
+}
+
 
 
 func main() {
