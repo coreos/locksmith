@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/philips/focaccia/updateengine"
 )
 
@@ -16,26 +18,24 @@ machine will reboot.`,
 	}
 )
 
-func watch(ch chan bool) {
-	for {
-		needed := <-ch
-		if needed {
-			println("Reboot needed")
-		}
-	}
-}
-
 func runWatch(args []string) int {
-	var ch chan bool
+	ch := make(chan updateengine.Status, 1)
 
 	ue, err := updateengine.New()
 	if err != nil {
 		panic(err)
 	}
 
-	println(ue.GetStatus())
+	result, err := ue.GetStatus()
+	if err == nil {
+		fmt.Println(result.String())
+	}
+
 	go ue.RebootNeededSignal(ch)
-	go watch(ch)
+	status := <-ch
+	// TODO(philips): use the logind dbus interfaces to do this
+	println("Reboot needed!", status.String())
+
 
 	return 0
 }

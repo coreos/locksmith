@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	dbusInterface                 = "com.coreos.update1.Engine"
-	dbusPath                      = "/com/coreos/update1/Engine"
+	dbusPath                      = "/com/coreos/update1/Manager"
+	dbusInterface                 = "com.coreos.update1.Manager"
 	dbusMember                    = "StatusUpdate"
 	dbusMemberInterface           = dbusInterface + "." + dbusMember
 	signalBuffer                  = 32 // TODO(bp): What is a reasonable value here?
@@ -44,11 +44,11 @@ func New() (c *Client, err error) {
 		return nil, err
 	}
 
-	c.object = c.conn.Object("com.coreos.update1.Engine",
-		dbus.ObjectPath("/com/coreos/update1/Engine"))
+	c.object = c.conn.Object(dbusInterface, dbus.ObjectPath(dbusPath))
 
 	// Setup the filter for the StatusUpdate signals
 	match := fmt.Sprintf("type='signal',interface='%s',member='%s'", dbusInterface, dbusMember)
+
 	call := c.conn.BusObject().Call("org.freedesktop.DBus.AddMatch", 0, match)
 	if call.Err != nil {
 		return nil, err
@@ -60,28 +60,26 @@ func New() (c *Client, err error) {
 	return c, nil
 }
 
-func (c *Client) RebootNeededSignal(rcvr chan bool) {
+func (c *Client) RebootNeededSignal(rcvr chan Status) {
 	for {
 		signal := <-c.ch
-		switch signal.Name {
-		case dbusMemberInterface:
-			current_operation := signal.Body[2].(string)
-			if current_operation == UpdateStatusUpdatedNeedReboot {
-				rcvr <- true
-			}
+		s := NewStatus(signal.Body)
+		println(s.String())
+		if s.CurrentOperation == UpdateStatusUpdatedNeedReboot {
+			rcvr <- s
 		}
 	}
 }
 
-func (c *Client) GetStatus() error {
-	result := make([][]interface{}, 0)
-	err := c.object.Call("com.coreos.update1.Engine.GetStatus", 0).Store(&result)
+func (c *Client) GetStatus() (result Status, err error) {
+	call := c.object.Call(dbusInterface + ".GetStatus", 0)
 	if err != nil {
-		return err
+		return
 	}
-	println(result)
 
-	return nil
+	result = NewStatus(call.Body)
+
+	return
 }
 
 func (c *Client) Close() {
