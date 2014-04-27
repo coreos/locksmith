@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/philips/focaccia/lock"
+	"github.com/coreos/locksmith/lock"
 )
 
 var (

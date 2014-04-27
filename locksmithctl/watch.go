@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/philips/focaccia/updateengine"
+	"github.com/coreos/locksmith/updateengine"
 )
 
 var (

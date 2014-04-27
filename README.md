@@ -1,6 +1,6 @@
-# rebootlockd
+# locksmithd
 
-rebootlockd is a reboot manager for the CoreOS update engine which uses
+locksmithd is a reboot manager for the CoreOS update engine which uses
 etcd to ensure that only a subset of a cluster of machines is rebooting
 at any given time.
 
@@ -9,7 +9,7 @@ at any given time.
 ### Listing the Holders
 
 ```
-$ rebootlockctl status
+$ locksmithctl status
 Available: 0
 Max: 1
 
@@ -24,7 +24,7 @@ holding a reboot lock. A system administrator can clear this lock using the
 unlock command.
 
 ```
-$ rebootlockctl unlock 69d27b356a94476da859461d3a3bc6fd
+$ locksmithctl unlock 69d27b356a94476da859461d3a3bc6fd
 ```
 
 ### Maximum Sempahore
@@ -34,7 +34,7 @@ want more than a single machine to be upgrading at a time. This can be done by
 increasing the semaphore count.
 
 ```
-$ rebootlockctl set-max 4
+$ locksmithctl set-max 4
 Old: 1
 New: 4
 ```

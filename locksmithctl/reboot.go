@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/coreos/go-systemd/login1"
-	"github.com/philips/focaccia/lock"
-	"github.com/philips/focaccia/pkg/machineid"
+	"github.com/coreos/locksmith/lock"
+	"github.com/coreos/locksmith/pkg/machineid"
 )
 
 var (

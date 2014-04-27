@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	cliName        = "focaccia"
+	cliName        = "locksmithctl"
 	cliDescription = `Manage the cluster wide reboot lock.`
 )
 
@@ -16,7 +16,7 @@ var (
 	out *tabwriter.Writer
 
 	commands      []*Command
-	globalFlagset *flag.FlagSet = flag.NewFlagSet("focaccia", flag.ExitOnError)
+	globalFlagset *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
 		Debug bool

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/philips/focaccia/lock"
+	"github.com/coreos/locksmith/lock"
 )
 
 var (
