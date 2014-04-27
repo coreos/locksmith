@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path"
 	"text/tabwriter"
 )
 
@@ -68,6 +69,11 @@ func main() {
 	// no command specified - trigger help
 	if len(args) < 1 {
 		args = append(args, "help")
+	}
+
+	progName := os.Args[0]
+	if path.Base(progName) == "locksmithd" {
+		runWatch([]string{})
 	}
 
 	var cmd *Command
