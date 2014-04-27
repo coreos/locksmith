@@ -31,13 +31,13 @@ func init() {
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
 	commands = []*Command{
+		cmdDaemon,
 		cmdHelp,
 		cmdLock,
 		cmdReboot,
 		cmdSetMax,
 		cmdStatus,
 		cmdUnlock,
-		cmdWatch,
 	}
 }
 
@@ -73,7 +73,7 @@ func main() {
 
 	progName := os.Args[0]
 	if path.Base(progName) == "locksmithd" {
-		runWatch([]string{})
+		runDaemon([]string{})
 	}
 
 	var cmd *Command
