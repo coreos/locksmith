@@ -33,7 +33,7 @@ func runStatus(args []string) (exit int) {
 	}
 
 	fmt.Println("Available:", sem.Semaphore)
-	fmt.Println("Max:", sem.Semaphore)
+	fmt.Println("Max:", sem.Max)
 
 	if len(sem.Holders) > 0 {
 		fmt.Fprintln(out, "")
