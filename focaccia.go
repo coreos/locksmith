@@ -32,6 +32,7 @@ func init() {
 	commands = []*Command{
 		cmdHelp,
 		cmdLock,
+		cmdReboot,
 		cmdSetMax,
 		cmdStatus,
 		cmdUnlock,
