@@ -20,7 +20,11 @@ given machine-id. Under normal operation this should not be necessary.`,
 )
 
 func runUnlock(args []string) (exit int) {
-	elc, _ := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient(nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
+		return 1
+	}
 
 	var mID string
 
@@ -36,7 +40,7 @@ func runUnlock(args []string) (exit int) {
 
 	l := lock.New(mID, elc)
 
-	err := l.Unlock()
+	err = l.Unlock()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error unlocking:", err)
 		return 1
