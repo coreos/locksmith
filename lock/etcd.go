@@ -10,11 +10,11 @@ import (
 const (
 	keyPrefix       = "coreos.com/updateengine/rebootlock"
 	holdersPrefix   = keyPrefix + "/holders"
-	SemaphorePrefix = keyPrefix + "/sempahore"
+	SemaphorePrefix = keyPrefix + "/semaphore"
 )
 
 // EtcdLockClient is a wrapper around the go-etcd client that provides
-// simple primitives to operate on the internal sempahore and holders
+// simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
 	client *etcd.Client
@@ -28,7 +28,7 @@ func NewEtcdLockClient(machines []string) (client *EtcdLockClient, err error) {
 	return client, err
 }
 
-// Init sets an initial copy of the sempahore if it doesn't exist yet.
+// Init sets an initial copy of the semaphore if it doesn't exist yet.
 func (c *EtcdLockClient) Init() (err error) {
 	sem := newSemaphore()
 	b, err := json.Marshal(sem)
