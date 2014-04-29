@@ -67,25 +67,3 @@ To take the lock a client the document will be swaped with this:
 	]
 }
 ```
-
-### Holders Directory
-
-Key: `coreos.com/updateengine/rebootlock/holders/<machineID>`
-
-
-When a rebootlock client takes the lock it should write information about
-itself to the holders directory. This should be a JSON document with the
-following information:
-
-```json
-{
-	"machineID": "69d27b356a94476da859461d3a3bc6fd",
-	"startTime": 1397496396
-}
-```
-
-This information is used to show an admin who is holding the semaphore and to
-resolve problems. The holder must delete themselves with a swap operation
-before incrementing the semaphore. This lets an administrator safely clear a
-reboot lock for a client that experienced a power outage or other failure
-before being able to release the lock.
