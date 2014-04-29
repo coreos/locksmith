@@ -24,12 +24,16 @@ func printHolders(sem *lock.Semaphore) {
 }
 
 func runStatus(args []string) (exit int) {
-	elc, _ := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient(nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
+		return 1
+	}
 	l := lock.New("", elc)
 
 	sem, err := l.Get()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error setting value: %s", err)
+		fmt.Fprintln(os.Stderr, "Error setting value:", err)
 	}
 
 	fmt.Println("Available:", sem.Semaphore)
