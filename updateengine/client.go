@@ -72,7 +72,8 @@ func (c *Client) RebootNeededSignal(rcvr chan Status) {
 }
 
 func (c *Client) GetStatus() (result Status, err error) {
-	call := c.object.Call(dbusInterface + ".GetStatus", 0)
+	call := c.object.Call(dbusInterface+".GetStatus", 0)
+	err = call.Err
 	if err != nil {
 		return
 	}

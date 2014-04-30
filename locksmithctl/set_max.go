@@ -25,17 +25,21 @@ func runSetMax(args []string) (exit int) {
 		return 1
 	}
 
-	elc, _ := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient(nil)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
+		return 1
+	}
 	l := lock.New("hi", elc)
 	max, err := strconv.Atoi(args[0])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Invalid maximum value: %s", args[0])
+		fmt.Fprintln(os.Stderr, "Invalid maximum value:", args[0])
 		return 1
 	}
 
 	sem, old, err := l.SetMax(max)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error setting value: %s", err)
+		fmt.Fprintln(os.Stderr, "Error setting value:", err)
 	}
 
 	fmt.Println("Old-Max:", old)
