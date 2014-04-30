@@ -42,12 +42,8 @@ func (s *Semaphore) addHolder(h string) error {
 }
 
 func (s *Semaphore) removeHolder(h string) error {
-	if len(s.Holders) == 0 {
-		return errors.New("Lock not held.")
-	}
-
 	loc := sort.SearchStrings(s.Holders, h)
-	if s.Holders[loc] == h {
+	if loc < len(s.Holders) && s.Holders[loc] == h {
 		s.Holders = append(s.Holders[:loc], s.Holders[loc+1:]...)
 	} else {
 		return errors.New("Lock not held.")
