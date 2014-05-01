@@ -31,7 +31,6 @@ func init() {
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
 	commands = []*Command{
-		cmdDaemon,
 		cmdHelp,
 		cmdLock,
 		cmdReboot,
