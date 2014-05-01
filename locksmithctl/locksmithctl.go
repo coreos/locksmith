@@ -73,7 +73,7 @@ func main() {
 
 	progName := os.Args[0]
 	if path.Base(progName) == "locksmithd" {
-		runDaemon([]string{})
+		os.Exit(runDaemon([]string{}))
 	}
 
 	var cmd *Command
