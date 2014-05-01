@@ -127,6 +127,15 @@ func etcdActive() (running bool, err error) {
 	return true, nil
 }
 
+func reboot(useLock bool, lck *lock.Lock, lgn *login1.Conn) {
+	if useLock {
+		lockAndReboot(lck, lgn)
+	}
+
+	rebootAndSleep(lgn)
+	fmt.Println("Error: reboot attempt never finished")
+}
+
 func runDaemon(args []string) int {
 	var lck *lock.Lock
 
@@ -176,6 +185,9 @@ func runDaemon(args []string) int {
 		}
 	}
 
+	ch := make(chan updateengine.Status, 1)
+	go ue.RebootNeededSignal(ch)
+
 	result, err := ue.GetStatus()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot get update engine status:", err)
@@ -183,8 +195,8 @@ func runDaemon(args []string) int {
 	}
 
 	if result.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
-		lockAndReboot(lck, lgn)
-		return 0
+		reboot(useLock, lck, lgn)
+		return 1
 	}
 
 	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q useLock=%t\n",
@@ -193,17 +205,9 @@ func runDaemon(args []string) int {
 		useLock,
 	)
 
-	ch := make(chan updateengine.Status, 1)
-
-	go ue.RebootNeededSignal(ch)
+	// Wait for a reboot needed signal
 	<-ch
-
-	if useLock {
-		lockAndReboot(lck, lgn)
-	}
-
-	rebootAndSleep(lgn)
-	fmt.Println("Error: reboot attempt never finished")
+	reboot(useLock, lck, lgn)
 
 	return 1
 }
