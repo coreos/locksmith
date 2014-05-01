@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 
 	etcdError "github.com/coreos/etcd/error"
-	"github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/locksmith/third_party/github.com/coreos/go-etcd/etcd"
 )
 
 const (
-	keyPrefix       = "coreos.com/updateengine/rebootlock"
-	holdersPrefix   = keyPrefix + "/holders"
-	SemaphorePrefix = keyPrefix + "/semaphore"
+	keyPrefix	= "coreos.com/updateengine/rebootlock"
+	holdersPrefix	= keyPrefix + "/holders"
+	SemaphorePrefix	= keyPrefix + "/semaphore"
 )
 
 // EtcdLockClient is a wrapper around the go-etcd client that provides
