@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/coreos/go-systemd/dbus"
 	"github.com/coreos/go-systemd/login1"
 
 	"github.com/coreos/locksmith/lock"
@@ -25,6 +26,12 @@ var (
 const (
 	initialTimeout = time.Second * 5
 	maxTimeout     = time.Minute * 30
+)
+
+const (
+	StrategyReboot     = "reboot"      // Reboot immediatly.
+	StrategyEtcdLock   = "etcd-lock"   // Always take a lock from etcd.
+	StrategyBestEffort = "best-effort" // If etcd is running then lock.
 )
 
 func expBackoff(try int) time.Duration {
@@ -79,11 +86,69 @@ func unlockIfHeld(lck *lock.Lock) {
 	}
 }
 
-func runDaemon(args []string) int {
-
+func setupLock() (lck *lock.Lock, err error) {
 	elc, err := lock.NewEtcdLockClient(nil)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
+		return nil, fmt.Errorf("Error initializing etcd client: %v", err)
+	}
+
+	mID := machineid.MachineID("/")
+	if mID == "" {
+		return nil, fmt.Errorf("Cannot read machine-id")
+	}
+
+	lck = lock.New(mID, elc)
+
+	unlockIfHeld(lck)
+
+	return lck, nil
+}
+
+// etcdActive returns true if etcd is not in an inactive state according to systemd.
+func etcdActive() (running bool, err error) {
+	sys, err := dbus.New()
+	if err != nil {
+		return false, err
+	}
+
+	prop, err := sys.GetUnitProperty("etcd.service", "ActiveState")
+	if err != nil {
+		return false, fmt.Errorf("Error getting etcd.service ActiveState: %v", err)
+	}
+
+	if prop.Value.Value().(string) == "inactive" {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func runDaemon(args []string) int {
+	var lck *lock.Lock
+
+	useLock := false
+	switch s := os.ExpandEnv("${LOCKSMITH_STRATEGY}"); {
+	case s == StrategyEtcdLock:
+		useLock = true
+	case s == StrategyBestEffort:
+		running, err := etcdActive()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+		if running {
+			fmt.Println("etcd.service is active")
+			useLock = true
+		} else {
+			fmt.Println("etcd.service is inactive")
+			useLock = false
+		}
+	case s == StrategyReboot:
+		useLock = false
+	case s == "":
+		useLock = false
+	default:
+		fmt.Fprintln(os.Stderr, "Unknown strategy:", s)
 		return 1
 	}
 
@@ -99,15 +164,13 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
-	mID := machineid.MachineID("/")
-	if mID == "" {
-		fmt.Fprintln(os.Stderr, "Cannot read machine-id")
-		return 1
+	if useLock {
+		lck, err = setupLock()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
 	}
-
-	lck := lock.New(mID, elc)
-
-	unlockIfHeld(lck)
 
 	result, err := ue.GetStatus()
 	if err != nil {
@@ -120,12 +183,22 @@ func runDaemon(args []string) int {
 		return 0
 	}
 
+	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q useLock=%t\n",
+		result.CurrentOperation,
+		os.ExpandEnv("${LOCKSMITH_STRATEGY}"),
+		useLock,
+	)
+
 	ch := make(chan updateengine.Status, 1)
 
 	go ue.RebootNeededSignal(ch)
 	<-ch
 
-	lockAndReboot(lck, lgn)
+	if useLock {
+		lockAndReboot(lck, lgn)
+	}
+
+	lgn.Reboot(false)
 
 	return 0
 }
