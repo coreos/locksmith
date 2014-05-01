@@ -43,6 +43,14 @@ func expBackoff(try int) time.Duration {
 	return sleep
 }
 
+func rebootAndSleep(lgn *login1.Conn) {
+	lgn.Reboot(false)
+	fmt.Println("Reboot sent. Going to sleep.")
+
+	// Wait a really long time for the reboot to occur.
+	time.Sleep(time.Hour * 24 * 7)
+}
+
 // lockAndReboot attempts to acquire the lock and reboot the machine in an
 // infinite loop. Returns if the lock was acquired and the reboot worked.
 func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
@@ -58,11 +66,7 @@ func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
 			continue
 		}
 
-		lgn.Reboot(false)
-		fmt.Println("Reboot signal sent.")
-
-		// Wait a really long time for the reboot to occur.
-		time.Sleep(time.Hour * 24 * 7)
+		rebootAndSleep(lgn)
 
 		return
 	}
@@ -198,7 +202,8 @@ func runDaemon(args []string) int {
 		lockAndReboot(lck, lgn)
 	}
 
-	lgn.Reboot(false)
+	rebootAndSleep(lgn)
+	fmt.Println("Error: reboot attempt never finished")
 
-	return 0
+	return 1
 }
