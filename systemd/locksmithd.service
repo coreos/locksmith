@@ -4,7 +4,7 @@ After=etcd.service
 After=update-engine.service
 
 [Service]
-ExecStart=/usr/bin/locksmithd
+ExecStart=/usr/lib/locksmith/locksmithd
 Restart=always
 RestartSec=10s
 
