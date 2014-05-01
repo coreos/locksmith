@@ -59,7 +59,7 @@ func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
 		err := lck.Lock()
 		if err != nil && err != lock.ErrExist {
 			sleep := expBackoff(tries)
-			fmt.Println("Retrying in %v. Error locking: %v", sleep, err)
+			fmt.Printf("Retrying in %v. Error locking: %v\n", sleep, err)
 			time.Sleep(sleep)
 			tries = tries + 1
 
