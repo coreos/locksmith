@@ -23,7 +23,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/godbus/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
 
 const signalBuffer = 100
@@ -40,20 +40,20 @@ func ObjectPath(path string) dbus.ObjectPath {
 
 // Conn is a connection to systemds dbus endpoint.
 type Conn struct {
-	sysconn     *dbus.Conn
-	sysobj      *dbus.Object
-	jobListener struct {
-		jobs map[dbus.ObjectPath]chan string
+	sysconn		*dbus.Conn
+	sysobj		*dbus.Object
+	jobListener	struct {
+		jobs	map[dbus.ObjectPath]chan string
 		sync.Mutex
 	}
-	subscriber struct {
-		updateCh chan<- *SubStateUpdate
-		errCh    chan<- error
+	subscriber	struct {
+		updateCh	chan<- *SubStateUpdate
+		errCh		chan<- error
 		sync.Mutex
-		ignore      map[dbus.ObjectPath]int64
-		cleanIgnore int64
+		ignore		map[dbus.ObjectPath]int64
+		cleanIgnore	int64
 	}
-	dispatch map[string]func(dbus.Signal)
+	dispatch	map[string]func(dbus.Signal)
 }
 
 // New() establishes a connection to the system bus and authenticates.

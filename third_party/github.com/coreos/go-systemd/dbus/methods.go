@@ -18,7 +18,7 @@ package dbus
 
 import (
 	"errors"
-	"github.com/godbus/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
 
 func (c *Conn) initJobs() {
@@ -208,7 +208,7 @@ func (c *Conn) SetUnitProperties(name string, runtime bool, properties ...Proper
 }
 
 func (c *Conn) GetUnitTypeProperty(unit string, unitType string, propertyName string) (*Property, error) {
-	return c.getProperty(unit, "org.freedesktop.systemd1." + unitType, propertyName)
+	return c.getProperty(unit, "org.freedesktop.systemd1."+unitType, propertyName)
 }
 
 // ListUnits returns an array with all currently loaded units. Note that
@@ -241,16 +241,16 @@ func (c *Conn) ListUnits() ([]UnitStatus, error) {
 }
 
 type UnitStatus struct {
-	Name        string          // The primary unit name as string
-	Description string          // The human readable description string
-	LoadState   string          // The load state (i.e. whether the unit file has been loaded successfully)
-	ActiveState string          // The active state (i.e. whether the unit is currently started or not)
-	SubState    string          // The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)
-	Followed    string          // A unit that is being followed in its state by this unit, if there is any, otherwise the empty string.
-	Path        dbus.ObjectPath // The unit object path
-	JobId       uint32          // If there is a job queued for the job unit the numeric job id, 0 otherwise
-	JobType     string          // The job type as string
-	JobPath     dbus.ObjectPath // The job object path
+	Name		string		// The primary unit name as string
+	Description	string		// The human readable description string
+	LoadState	string		// The load state (i.e. whether the unit file has been loaded successfully)
+	ActiveState	string		// The active state (i.e. whether the unit is currently started or not)
+	SubState	string		// The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)
+	Followed	string		// A unit that is being followed in its state by this unit, if there is any, otherwise the empty string.
+	Path		dbus.ObjectPath	// The unit object path
+	JobId		uint32		// If there is a job queued for the job unit the numeric job id, 0 otherwise
+	JobType		string		// The job type as string
+	JobPath		dbus.ObjectPath	// The job object path
 }
 
 // EnableUnitFiles() may be used to enable one or more units in the system (by
@@ -298,9 +298,9 @@ func (c *Conn) EnableUnitFiles(files []string, runtime bool, force bool) (bool, 
 }
 
 type EnableUnitFileChange struct {
-	Type        string // Type of the change (one of symlink or unlink)
-	Filename    string // File name of the symlink
-	Destination string // Destination of the symlink
+	Type		string	// Type of the change (one of symlink or unlink)
+	Filename	string	// File name of the symlink
+	Destination	string	// Destination of the symlink
 }
 
 // DisableUnitFiles() may be used to disable one or more units in the system (by
@@ -342,9 +342,9 @@ func (c *Conn) DisableUnitFiles(files []string, runtime bool) ([]DisableUnitFile
 }
 
 type DisableUnitFileChange struct {
-	Type        string // Type of the change (one of symlink or unlink)
-	Filename    string // File name of the symlink
-	Destination string // Destination of the symlink
+	Type		string	// Type of the change (one of symlink or unlink)
+	Filename	string	// File name of the symlink
+	Destination	string	// Destination of the symlink
 }
 
 // Reload instructs systemd to scan for and reload unit files. This is

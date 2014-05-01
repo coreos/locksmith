@@ -21,18 +21,18 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/godbus/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
 
 const (
-	dbusInterface = "org.freedesktop.login1.Manager"
-	dbusPath      = "/org/freedesktop/login1"
+	dbusInterface	= "org.freedesktop.login1.Manager"
+	dbusPath	= "/org/freedesktop/login1"
 )
 
 // Conn is a connection to systemds dbus endpoint.
 type Conn struct {
-	conn   *dbus.Conn
-	object *dbus.Object
+	conn	*dbus.Conn
+	object	*dbus.Object
 }
 
 // New() establishes a connection to the system bus and authenticates.

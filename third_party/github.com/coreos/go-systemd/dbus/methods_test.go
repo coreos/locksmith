@@ -24,7 +24,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/godbus/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
 
 func setupConn(t *testing.T) *Conn {
