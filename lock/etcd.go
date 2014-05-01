@@ -3,7 +3,7 @@ package lock
 import (
 	"encoding/json"
 
-	etcdError "github.com/coreos/etcd/error"
+	etcdError "github.com/coreos/locksmith/third_party/github.com/coreos/etcd/error"
 	"github.com/coreos/locksmith/third_party/github.com/coreos/go-etcd/etcd"
 )
 
