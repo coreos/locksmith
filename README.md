@@ -20,6 +20,8 @@ These strategies can be configured via `/etc/systemd/system/locksmithd.service.d
 Environment=LOCKSMITH_STRATEGY=reboot
 ```
 
+The default strategy is `reboot`.
+
 ## Usage
 
 ### Listing the Holders
