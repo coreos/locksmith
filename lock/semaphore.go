@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	ErrExist = errors.New("holder exists")
+	ErrExist    = errors.New("holder exists")
 	ErrNotExist = errors.New("holder does not exist")
 )
 

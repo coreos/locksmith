@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	keyPrefix	= "coreos.com/updateengine/rebootlock"
-	holdersPrefix	= keyPrefix + "/holders"
-	SemaphorePrefix	= keyPrefix + "/semaphore"
+	keyPrefix       = "coreos.com/updateengine/rebootlock"
+	holdersPrefix   = keyPrefix + "/holders"
+	SemaphorePrefix = keyPrefix + "/semaphore"
 )
 
 // EtcdLockClient is a wrapper around the go-etcd client that provides
