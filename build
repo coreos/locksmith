@@ -1,0 +1,13 @@
+#!/bin/bash -e
+
+if [ ! -h gopath/src/github.com/coreos/locksmith ]; then
+	mkdir -p gopath/src/github.com/coreos/
+	ln -s ../../../.. gopath/src/github.com/coreos/locksmith
+fi
+
+export GOBIN=${PWD}/bin
+export GOPATH=${PWD}/gopath
+
+eval $(go env)
+
+go install github.com/coreos/locksmith/locksmithctl

@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+source ./build
+
+if [ -z "$PKG" ]; then
+	PKG="./updateengine ./lock ./locksmithctl"
+	GOFMTPATH="$PKG"
+else
+	GOFMTPATH="$PKG"
+fi
+
+# Unit tests
+echo
+go test -i $PKG
+go test -cover -v $PKG
+
+fmtRes=`gofmt -l $GOFMTPATH`
+if [ "$fmtRes" != "" ]; then
+	echo "Failed to pass golang format checking:"
+	echo $fmtRes
+	exit 1
+fi
