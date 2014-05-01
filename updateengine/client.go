@@ -2,24 +2,24 @@ package updateengine
 
 import (
 	"fmt"
-	"github.com/godbus/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 	"os"
 	"strconv"
 )
 
 const (
-	dbusPath                      = "/com/coreos/update1"
-	dbusInterface                 = "com.coreos.update1.Manager"
-	dbusMember                    = "StatusUpdate"
-	dbusMemberInterface           = dbusInterface + "." + dbusMember
-	signalBuffer                  = 32 // TODO(bp): What is a reasonable value here?
-	UpdateStatusUpdatedNeedReboot = "UPDATE_STATUS_UPDATED_NEED_REBOOT"
+	dbusPath			= "/com/coreos/update1"
+	dbusInterface			= "com.coreos.update1.Manager"
+	dbusMember			= "StatusUpdate"
+	dbusMemberInterface		= dbusInterface + "." + dbusMember
+	signalBuffer			= 32	// TODO(bp): What is a reasonable value here?
+	UpdateStatusUpdatedNeedReboot	= "UPDATE_STATUS_UPDATED_NEED_REBOOT"
 )
 
 type Client struct {
-	conn   *dbus.Conn
-	object *dbus.Object
-	ch     chan *dbus.Signal
+	conn	*dbus.Conn
+	object	*dbus.Object
+	ch	chan *dbus.Signal
 }
 
 func New() (c *Client, err error) {
