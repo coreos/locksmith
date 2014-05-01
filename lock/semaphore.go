@@ -3,6 +3,7 @@ package lock
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 )
 
@@ -59,7 +60,7 @@ func (s *Semaphore) removeHolder(h string) error {
 
 func (s *Semaphore) Lock(h string) error {
 	if s.Semaphore <= 0 {
-		return errors.New("semaphore is at 0")
+		return fmt.Errorf("semaphore is at %v", s.Semaphore)
 	}
 
 	if err := s.addHolder(h); err != nil {
