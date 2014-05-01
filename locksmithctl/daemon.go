@@ -29,9 +29,9 @@ const (
 )
 
 const (
-	StrategyReboot     = "reboot"      // Reboot immediatly.
-	StrategyEtcdLock   = "etcd-lock"   // Always take a lock from etcd.
-	StrategyBestEffort = "best-effort" // If etcd is running then lock.
+	StrategyReboot     = "reboot"
+	StrategyEtcdLock   = "etcd-lock"
+	StrategyBestEffort = "best-effort"
 )
 
 func expBackoff(try int) time.Duration {
@@ -52,7 +52,7 @@ func rebootAndSleep(lgn *login1.Conn) {
 }
 
 // lockAndReboot attempts to acquire the lock and reboot the machine in an
-// infinite loop. Returns if the lock was acquired and the reboot worked.
+// infinite loop. Returns if the reboot failed.
 func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
 	tries := 0
 	for {
