@@ -5,11 +5,11 @@ import (
 )
 
 type Status struct {
-	LastCheckedTime int64
-	Progress float64
+	LastCheckedTime  int64
+	Progress         float64
 	CurrentOperation string
-	NewVersion string
-	NewSize int64
+	NewVersion       string
+	NewSize          int64
 }
 
 func NewStatus(body []interface{}) (s Status) {
@@ -18,7 +18,7 @@ func NewStatus(body []interface{}) (s Status) {
 	s.CurrentOperation = body[2].(string)
 	s.NewVersion = body[3].(string)
 	s.NewSize = body[4].(int64)
-	
+
 	return
 }
 
@@ -31,5 +31,3 @@ func (s *Status) String() string {
 		s.NewSize,
 	)
 }
-
-
