@@ -4,6 +4,24 @@ locksmithd is a reboot manager for the CoreOS update engine which uses
 etcd to ensure that only a subset of a cluster of machines is rebooting
 at any given time.
 
+## Configuration
+
+There are three different strategies that locksmith can use after update engine
+has successfully applied an update:
+
+- `LOCKSMITH_STRATEGY=etcd-lock` - reboot after first taking a lock in etcd.
+- `LOCKSMITH_STRATEGY=reboot` - reboot immediately without taking a lock.
+- `LOCKSMITH_STRATEGY=best-effort` - if etcd is running then do `etcd-lock` otherwise simply `reboot`.
+
+These strategies can be configured via `/etc/systemd/system/locksmithd.service.d/strategy.conf` with a file that looks like:
+
+```
+[Service]
+Environment=LOCKSMITH_STRATEGY=reboot
+```
+
+The default strategy is `reboot`.
+
 ## Usage
 
 ### Listing the Holders

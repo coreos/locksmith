@@ -31,7 +31,6 @@ func init() {
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 
 	commands = []*Command{
-		cmdDaemon,
 		cmdHelp,
 		cmdLock,
 		cmdReboot,
@@ -73,7 +72,7 @@ func main() {
 
 	progName := os.Args[0]
 	if path.Base(progName) == "locksmithd" {
-		runDaemon([]string{})
+		os.Exit(runDaemon([]string{}))
 	}
 
 	var cmd *Command

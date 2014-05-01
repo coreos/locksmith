@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	dbusPath                      = "/com/coreos/update1/Manager"
+	dbusPath                      = "/com/coreos/update1"
 	dbusInterface                 = "com.coreos.update1.Manager"
 	dbusMember                    = "StatusUpdate"
 	dbusMemberInterface           = dbusInterface + "." + dbusMember
@@ -44,7 +44,7 @@ func New() (c *Client, err error) {
 		return nil, err
 	}
 
-	c.object = c.conn.Object(dbusInterface, dbus.ObjectPath(dbusPath))
+	c.object = c.conn.Object("com.coreos.update1", dbus.ObjectPath(dbusPath))
 
 	// Setup the filter for the StatusUpdate signals
 	match := fmt.Sprintf("type='signal',interface='%s',member='%s'", dbusInterface, dbusMember)

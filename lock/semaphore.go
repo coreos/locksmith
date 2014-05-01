@@ -3,7 +3,13 @@ package lock
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
+)
+
+var (
+	ErrExist = errors.New("holder exists")
+	ErrNotExist = errors.New("holder does not exist")
 )
 
 type Semaphore struct {
@@ -33,7 +39,7 @@ func (s *Semaphore) addHolder(h string) error {
 	case loc == len(s.Holders):
 		s.Holders = append(s.Holders, h)
 	case s.Holders[loc] == h:
-		return errors.New("Holder exists for this id")
+		return ErrExist
 	default:
 		s.Holders = append(s.Holders[:loc], append([]string{h}, s.Holders[loc:]...)...)
 	}
@@ -46,7 +52,7 @@ func (s *Semaphore) removeHolder(h string) error {
 	if loc < len(s.Holders) && s.Holders[loc] == h {
 		s.Holders = append(s.Holders[:loc], s.Holders[loc+1:]...)
 	} else {
-		return errors.New("Lock not held.")
+		return ErrNotExist
 	}
 
 	return nil
@@ -54,7 +60,7 @@ func (s *Semaphore) removeHolder(h string) error {
 
 func (s *Semaphore) Lock(h string) error {
 	if s.Semaphore <= 0 {
-		return errors.New("Semaphore is at 0")
+		return fmt.Errorf("semaphore is at %v", s.Semaphore)
 	}
 
 	if err := s.addHolder(h); err != nil {
