@@ -25,7 +25,7 @@ var (
 
 const (
 	initialTimeout = time.Second * 5
-	maxTimeout     = time.Minute * 30
+	maxTimeout     = time.Minute * 5
 )
 
 const (
