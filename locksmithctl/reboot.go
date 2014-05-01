@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/coreos/go-systemd/login1"
+	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/login1"
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/pkg/machineid"
 )
 
 var (
 	cmdReboot = &Command{
-		Name:        "reboot",
-		Summary:     "Reboot honoring reboot locks.",
-		Description: `Reboot will attempt to reboot immediatly after taking a reboot lock. The user is responsible for unlocking after a successful reboot.`,
-		Run:         runReboot,
+		Name:		"reboot",
+		Summary:	"Reboot honoring reboot locks.",
+		Description:	`Reboot will attempt to reboot immediatly after taking a reboot lock. The user is responsible for unlocking after a successful reboot.`,
+		Run:		runReboot,
 	}
 )
 

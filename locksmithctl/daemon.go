@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/coreos/go-systemd/dbus"
-	"github.com/coreos/go-systemd/login1"
+	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/login1"
 
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/pkg/machineid"
@@ -16,22 +16,22 @@ import (
 
 var (
 	cmdDaemon = &Command{
-		Name:        "daemon",
-		Summary:     "Daemon for reboot needed signal and if reboot able.",
-		Description: `Daemon waits for the reboot needed signal coming out of update engine and attempts to acquire the reboot lock. If the reboot lock is acquired then the machine will reboot.`,
-		Run:         runDaemon,
+		Name:		"daemon",
+		Summary:	"Daemon for reboot needed signal and if reboot able.",
+		Description:	`Daemon waits for the reboot needed signal coming out of update engine and attempts to acquire the reboot lock. If the reboot lock is acquired then the machine will reboot.`,
+		Run:		runDaemon,
 	}
 )
 
 const (
-	initialTimeout = time.Second * 5
-	maxTimeout     = time.Minute * 5
+	initialTimeout	= time.Second * 5
+	maxTimeout	= time.Minute * 5
 )
 
 const (
-	StrategyReboot     = "reboot"
-	StrategyEtcdLock   = "etcd-lock"
-	StrategyBestEffort = "best-effort"
+	StrategyReboot		= "reboot"
+	StrategyEtcdLock	= "etcd-lock"
+	StrategyBestEffort	= "best-effort"
 )
 
 func expBackoff(try int) time.Duration {
