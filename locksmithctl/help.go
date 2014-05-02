@@ -96,7 +96,7 @@ func runHelp(args []string) (exit int) {
 }
 
 func printGlobalUsage() {
-	globalUsageTemplate.Execute(os.Stdout, struct {
+	globalUsageTemplate.Execute(out, struct {
 		Executable  string
 		Commands    []*Command
 		Flags       []*flag.Flag

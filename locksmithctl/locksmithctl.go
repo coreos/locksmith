@@ -34,6 +34,7 @@ func init() {
 		cmdHelp,
 		cmdLock,
 		cmdReboot,
+		cmdSendNeedReboot,
 		cmdSetMax,
 		cmdStatus,
 		cmdUnlock,
