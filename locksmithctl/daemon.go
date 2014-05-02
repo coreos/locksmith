@@ -141,8 +141,8 @@ func runDaemon(args []string) int {
 
 	useLock := false
 	switch s := os.ExpandEnv("${LOCKSMITH_STRATEGY}"); {
-	case s == StrategyEtcdLock:
-		useLock = true
+	case s == "":
+		fallthrough
 	case s == StrategyBestEffort:
 		running, err := etcdActive()
 		if err != nil {
@@ -156,9 +156,9 @@ func runDaemon(args []string) int {
 			fmt.Println("etcd.service is inactive")
 			useLock = false
 		}
+	case s == StrategyEtcdLock:
+		useLock = true
 	case s == StrategyReboot:
-		useLock = false
-	case s == "":
 		useLock = false
 	default:
 		fmt.Fprintln(os.Stderr, "Unknown strategy:", s)
