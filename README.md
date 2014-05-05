@@ -1,7 +1,7 @@
 # locksmithd
 
 locksmithd is a reboot manager for the CoreOS update engine which uses
-etcd to ensure that only a subset of a cluster of machines is rebooting
+etcd to ensure that only a subset of a cluster of machines are rebooting
 at any given time.
 
 ## Configuration
@@ -63,8 +63,8 @@ New: 4
 
 Key: `coreos.com/updateengine/rebootlock/semaphore`
 
-The semaphore is a json document that describes a simple semaphore that clients
-swap to take the lock. When it is first created it will be initialized like so:
+The semaphore is a json document describing a simple semaphore that clients swap
+to take the lock. When it is first created it will be initialized like so:
 
 ```json
 {
@@ -74,7 +74,7 @@ swap to take the lock. When it is first created it will be initialized like so:
 }
 ```
 
-To take the lock a client the document will be swaped with this:
+For a client to take the lock, the document will be swapped with this:
 
 ```json
 {
