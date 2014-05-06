@@ -72,24 +72,6 @@ func (r rebooter) lockAndReboot(lck *lock.Lock) {
 	}
 }
 
-func unlockIfHeld(lck *lock.Lock) {
-	tries := 0
-	for {
-		err := lck.Unlock()
-		if err == nil {
-			fmt.Println("Unlocked existing lock for this machine")
-			return
-		} else if err == lock.ErrNotExist {
-			return
-		}
-
-		sleep := expBackoff(tries)
-		fmt.Println("Retrying in %v. Error unlocking: %v", sleep, err)
-		time.Sleep(sleep)
-		tries = tries + 1
-	}
-}
-
 func setupLock() (lck *lock.Lock, err error) {
 	elc, err := lock.NewEtcdLockClient(nil)
 	if err != nil {
@@ -102,8 +84,6 @@ func setupLock() (lck *lock.Lock, err error) {
 	}
 
 	lck = lock.New(mID, elc)
-
-	unlockIfHeld(lck)
 
 	return lck, nil
 }
@@ -171,12 +151,54 @@ func (r rebooter) reboot() int {
 			return 1
 		}
 
+		err = unlockIfHeld(lck)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+
 		r.lockAndReboot(lck)
 	}
 
 	rebootAndSleep(r.lgn)
 	fmt.Println("Error: reboot attempt never finished")
 	return 1
+}
+
+// unlockIfHeld will unlock a lock, if it is held by this machine, or return an error.
+func unlockIfHeld(lck *lock.Lock) error {
+	err := lck.Unlock()
+	if err == lock.ErrNotExist {
+		return nil
+	} else if err == nil {
+		fmt.Println("Unlocked existing lock for this machine")
+		return nil
+	}
+
+	return err
+}
+
+// unlockHeldLock will loop until it can confirm that any held locks are
+// released or a stop signal is sent.
+func unlockHeldLocks(lck *lock.Lock, stop chan struct{}) {
+	tries := 0
+	for {
+		select {
+		case <-stop:
+			return
+		default:
+		}
+
+		err := unlockIfHeld(lck)
+		if err == nil {
+			return
+		}
+
+		sleep := expBackoff(tries)
+		fmt.Println("Retrying in %v. Error unlocking: %v", sleep, err)
+		time.Sleep(sleep)
+		tries = tries + 1
+	}
 }
 
 func runDaemon(args []string) int {
@@ -197,6 +219,20 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
+	active, err := etcdActive()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error checking on etcd.service:", err)
+	}
+
+	stopUnlock := make(chan struct{}, 1)
+	if active {
+		l, err := setupLock()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "Error setting up lock client for unlock:", err)
+			return 1
+		}
+		go unlockHeldLocks(l, stopUnlock)
+	}
 
 	ch := make(chan updateengine.Status, 1)
 	go ue.RebootNeededSignal(ch)
@@ -209,16 +245,18 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
-	if result.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
-		return r.reboot()
-	}
-
 	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q\n",
 		result.CurrentOperation,
 		strategy,
 	)
 
+	if result.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
+		close(stopUnlock)
+		return r.reboot()
+	}
+
 	// Wait for a reboot needed signal
 	<-ch
+	close(stopUnlock)
 	return r.reboot()
 }
