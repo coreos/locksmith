@@ -1,9 +1,7 @@
 [Unit]
 Description=Cluster reboot manager
-After=etcd.service
+Requires=update-engine.service
 After=update-engine.service
-After=user-config.target
-After=system-config.target
 
 [Service]
 ExecStart=/usr/lib/locksmith/locksmithd
