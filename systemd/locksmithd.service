@@ -4,6 +4,8 @@ Requires=update-engine.service
 After=update-engine.service
 
 [Service]
+EnvironmentFile=-/usr/share/coreos/update.conf
+EnvironmentFile=-/etc/coreos/update.conf
 ExecStart=/usr/lib/locksmith/locksmithd
 Restart=always
 RestartSec=10s

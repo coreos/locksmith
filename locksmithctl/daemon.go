@@ -182,7 +182,7 @@ func (r rebooter) reboot() int {
 }
 
 func runDaemon(args []string) int {
-	strategy := os.ExpandEnv("${LOCKSMITH_STRATEGY}")
+	strategy := os.ExpandEnv("${STRATEGY}")
 
 	ue, err := updateengine.New()
 	if err != nil {
@@ -214,7 +214,7 @@ func runDaemon(args []string) int {
 
 	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q\n",
 		result.CurrentOperation,
-		os.ExpandEnv("${LOCKSMITH_STRATEGY}"),
+		strategy,
 	)
 
 	// Wait for a reboot needed signal
