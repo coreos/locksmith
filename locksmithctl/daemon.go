@@ -53,7 +53,7 @@ func rebootAndSleep(lgn *login1.Conn) {
 
 // lockAndReboot attempts to acquire the lock and reboot the machine in an
 // infinite loop. Returns if the reboot failed.
-func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
+func (r rebooter) lockAndReboot(lck *lock.Lock) {
 	tries := 0
 	for {
 		err := lck.Lock()
@@ -66,7 +66,7 @@ func lockAndReboot(lck *lock.Lock, lgn *login1.Conn) {
 			continue
 		}
 
-		rebootAndSleep(lgn)
+		rebootAndSleep(r.lgn)
 
 		return
 	}
@@ -127,27 +127,19 @@ func etcdActive() (running bool, err error) {
 	return true, nil
 }
 
-func reboot(useLock bool, lck *lock.Lock, lgn *login1.Conn) {
-	if useLock {
-		lockAndReboot(lck, lgn)
-	}
-
-	rebootAndSleep(lgn)
-	fmt.Println("Error: reboot attempt never finished")
+type rebooter struct {
+	strategy string
+	lgn *login1.Conn
 }
 
-func runDaemon(args []string) int {
-	var lck *lock.Lock
-
-	useLock := false
-	switch s := os.ExpandEnv("${LOCKSMITH_STRATEGY}"); {
-	case s == "":
+func (r rebooter) useLock() (useLock bool, err error) {
+	switch r.strategy {
+	case "":
 		fallthrough
-	case s == StrategyBestEffort:
+	case StrategyBestEffort:
 		running, err := etcdActive()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 1
+			return false, err
 		}
 		if running {
 			fmt.Println("etcd.service is active")
@@ -156,14 +148,41 @@ func runDaemon(args []string) int {
 			fmt.Println("etcd.service is inactive")
 			useLock = false
 		}
-	case s == StrategyEtcdLock:
+	case StrategyEtcdLock:
 		useLock = true
-	case s == StrategyReboot:
+	case StrategyReboot:
 		useLock = false
 	default:
-		fmt.Fprintln(os.Stderr, "Unknown strategy:", s)
+		return false, fmt.Errorf("Unknown strategy: %s", r.strategy)
+	}
+
+	return useLock, nil
+}
+
+func (r rebooter) reboot() int {
+	useLock, err := r.useLock()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+
+	if useLock {
+		lck, err := setupLock()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 1
+		}
+
+		r.lockAndReboot(lck)
+	}
+
+	rebootAndSleep(r.lgn)
+	fmt.Println("Error: reboot attempt never finished")
+	return 1
+}
+
+func runDaemon(args []string) int {
+	strategy := os.ExpandEnv("${LOCKSMITH_STRATEGY}")
 
 	ue, err := updateengine.New()
 	if err != nil {
@@ -177,16 +196,11 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
-	if useLock {
-		lck, err = setupLock()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return 1
-		}
-	}
 
 	ch := make(chan updateengine.Status, 1)
 	go ue.RebootNeededSignal(ch)
+
+	r := rebooter{strategy, lgn}
 
 	result, err := ue.GetStatus()
 	if err != nil {
@@ -195,19 +209,15 @@ func runDaemon(args []string) int {
 	}
 
 	if result.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
-		reboot(useLock, lck, lgn)
-		return 1
+		return r.reboot()
 	}
 
-	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q useLock=%t\n",
+	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q\n",
 		result.CurrentOperation,
 		os.ExpandEnv("${LOCKSMITH_STRATEGY}"),
-		useLock,
 	)
 
 	// Wait for a reboot needed signal
 	<-ch
-	reboot(useLock, lck, lgn)
-
-	return 1
+	return r.reboot()
 }
