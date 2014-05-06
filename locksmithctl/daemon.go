@@ -134,8 +134,6 @@ type rebooter struct {
 
 func (r rebooter) useLock() (useLock bool, err error) {
 	switch r.strategy {
-	case "":
-		fallthrough
 	case StrategyBestEffort:
 		running, err := etcdActive()
 		if err != nil {
@@ -183,6 +181,9 @@ func (r rebooter) reboot() int {
 
 func runDaemon(args []string) int {
 	strategy := os.ExpandEnv("${STRATEGY}")
+	if strategy == "" {
+		strategy = StrategyBestEffort
+	}
 
 	ue, err := updateengine.New()
 	if err != nil {
