@@ -200,7 +200,7 @@ func unlockHeldLocks(lck *lock.Lock, stop chan struct{}) {
 }
 
 func runDaemon(args []string) int {
-	strategy := os.ExpandEnv("${STRATEGY}")
+	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
 	if strategy == "" {
 		strategy = StrategyBestEffort
 	}

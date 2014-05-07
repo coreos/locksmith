@@ -9,15 +9,15 @@ at any given time.
 There are three different strategies that locksmith can use after update engine
 has successfully applied an update:
 
-- `LOCKSMITH_STRATEGY=etcd-lock` - reboot after first taking a lock in etcd.
-- `LOCKSMITH_STRATEGY=reboot` - reboot immediately without taking a lock.
-- `LOCKSMITH_STRATEGY=best-effort` - if etcd is running then do `etcd-lock` otherwise simply `reboot`.
+- `REBOOT_STRATEGY=etcd-lock` - reboot after first taking a lock in etcd.
+- `REBOOT_STRATEGY=reboot` - reboot immediately without taking a lock.
+- `REBOOT_STRATEGY=best-effort` - if etcd is running then do `etcd-lock` otherwise simply `reboot`.
 
 These strategies can be configured via `/etc/systemd/system/locksmithd.service.d/strategy.conf` with a file that looks like:
 
 ```
 [Service]
-Environment=LOCKSMITH_STRATEGY=reboot
+Environment=REBOOT_STRATEGY=reboot
 ```
 
 The default strategy is `best-effort`.
