@@ -1,0 +1,14 @@
+#!/bin/sh
+
+alias ssh='ssh -F ssh-config'
+alias scp='scp -F ssh-config'
+
+for i in `seq 1 3`; do
+	h="core-0${i}"
+	ssh ${h} sudo systemctl stop locksmithd
+	scp locksmithd ${h}:
+	ssh ${h} sudo cp /usr/lib/systemd/system/locksmithd.service /etc/systemd/system/locksmithd.service
+	ssh ${h} sudo sed -i 's%/usr/lib/locksmith%/home/core%g' /etc/systemd/system/locksmithd.service
+	ssh ${h} sudo systemctl daemon-reload
+	ssh ${h} sudo systemctl restart locksmithd
+done
