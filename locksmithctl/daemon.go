@@ -180,22 +180,41 @@ func unlockIfHeld(lck *lock.Lock) error {
 
 // unlockHeldLock will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
-func unlockHeldLocks(lck *lock.Lock, stop chan struct{}) {
+func unlockHeldLocks(stop chan struct{}) {
 	tries := 0
 	var sleep time.Duration
 	for {
+		var reason string
 		select {
 		case <-stop:
 			return
 		case <-time.After(sleep):
-			err := unlockIfHeld(lck)
+			active, err := etcdActive()
+			if err != nil {
+				reason = "error checking on etcd.service"
+				break
+			}
+			if !active {
+				reason = "etcd.service is inactive"
+				break
+			}
+
+			lck, err := setupLock()
+			if err != nil {
+				reason = "error setting up lock"
+				break
+			}
+
+			err = unlockIfHeld(lck)
 			if err == nil {
 				return
 			}
-			sleep = expBackoff(tries)
-			fmt.Println("Retrying in %v. Error unlocking: %v", sleep, err)
-			tries = tries + 1
+			reason = err.Error()
 		}
+
+		sleep = expBackoff(tries)
+		fmt.Printf("Unlocking old locks failed: %v. Retrying in %v.\n", reason, sleep)
+		tries = tries + 1
 	}
 }
 
@@ -217,19 +236,9 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
-	active, err := etcdActive()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error checking on etcd.service:", err)
-	}
-
 	stopUnlock := make(chan struct{}, 1)
-	if active {
-		l, err := setupLock()
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error setting up lock client for unlock:", err)
-			return 1
-		}
-		go unlockHeldLocks(l, stopUnlock)
+	if strategy != StrategyReboot {
+		go unlockHeldLocks(stopUnlock)
 	}
 
 	ch := make(chan updateengine.Status, 1)
