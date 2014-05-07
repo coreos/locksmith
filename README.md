@@ -13,11 +13,10 @@ has successfully applied an update:
 - `REBOOT_STRATEGY=reboot` - reboot immediately without taking a lock.
 - `REBOOT_STRATEGY=best-effort` - if etcd is running then do `etcd-lock` otherwise simply `reboot`.
 
-These strategies can be configured via `/etc/systemd/system/locksmithd.service.d/strategy.conf` with a file that looks like:
+These strategies can be configured via `/etc/coreos/update.conf` with a line that looks like:
 
 ```
-[Service]
-Environment=REBOOT_STRATEGY=reboot
+REBOOT_STRATEGY=reboot
 ```
 
 The default strategy is `best-effort`.
