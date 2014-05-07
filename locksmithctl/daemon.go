@@ -182,22 +182,20 @@ func unlockIfHeld(lck *lock.Lock) error {
 // released or a stop signal is sent.
 func unlockHeldLocks(lck *lock.Lock, stop chan struct{}) {
 	tries := 0
+	var sleep time.Duration
 	for {
 		select {
 		case <-stop:
 			return
-		default:
+		case <-time.After(sleep):
+			err := unlockIfHeld(lck)
+			if err == nil {
+				return
+			}
+			sleep = expBackoff(tries)
+			fmt.Println("Retrying in %v. Error unlocking: %v", sleep, err)
+			tries = tries + 1
 		}
-
-		err := unlockIfHeld(lck)
-		if err == nil {
-			return
-		}
-
-		sleep := expBackoff(tries)
-		fmt.Println("Retrying in %v. Error unlocking: %v", sleep, err)
-		time.Sleep(sleep)
-		tries = tries + 1
 	}
 }
 
