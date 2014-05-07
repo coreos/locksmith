@@ -237,7 +237,9 @@ func runDaemon(args []string) int {
 	}
 
 	stopUnlock := make(chan struct{}, 1)
-	go unlockHeldLocks(stopUnlock)
+	if strategy != StrategyReboot {
+		go unlockHeldLocks(stopUnlock)
+	}
 
 	ch := make(chan updateengine.Status, 1)
 	go ue.RebootNeededSignal(ch)
