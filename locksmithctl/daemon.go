@@ -248,13 +248,10 @@ func runDaemon(args []string) int {
 		strategy,
 	)
 
-	if result.CurrentOperation == updateengine.UpdateStatusUpdatedNeedReboot {
-		close(stopUnlock)
-		return r.reboot()
+	if result.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
+		<-ch
 	}
 
-	// Wait for a reboot needed signal
-	<-ch
 	close(stopUnlock)
 	return r.reboot()
 }
