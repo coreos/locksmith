@@ -2,6 +2,8 @@
 Description=Cluster reboot manager
 Requires=update-engine.service
 After=update-engine.service
+ConditionVirtualization=!container
+ConditionPathExists=!/usr/.noupdate
 
 [Service]
 EnvironmentFile=-/usr/share/coreos/update.conf
