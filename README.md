@@ -1,17 +1,18 @@
-# locksmithd
+# locksmith
 
-locksmithd is a reboot manager for the CoreOS update engine which uses
+locksmith is a reboot manager for the CoreOS update engine which uses
 etcd to ensure that only a subset of a cluster of machines are rebooting
-at any given time.
+at any given time. `locksmithd` runs as a daemon on CoreOS machines and is
+responsible for controlling the reboot behaviour after updates.
 
 ## Configuration
 
-There are three different strategies that locksmith can use after update engine
-has successfully applied an update:
+There are three different strategies that `locksmithd` can use after the update
+engine has successfully applied an update:
 
-- `REBOOT_STRATEGY=etcd-lock` - reboot after first taking a lock in etcd.
-- `REBOOT_STRATEGY=reboot` - reboot immediately without taking a lock.
-- `REBOOT_STRATEGY=best-effort` - if etcd is running then do `etcd-lock` otherwise simply `reboot`.
+- `etcd-lock` - reboot after first taking a lock in etcd.
+- `reboot` - reboot immediately without taking a lock.
+- `best-effort` - if etcd is running, then do `etcd-lock`; otherwise, `reboot`.
 
 These strategies can be configured via `/etc/coreos/update.conf` with a line that looks like:
 
@@ -19,9 +20,14 @@ These strategies can be configured via `/etc/coreos/update.conf` with a line tha
 REBOOT_STRATEGY=reboot
 ```
 
+The reboot strategy can also be configured through [cloud-config](https://github.com/coreos/coreos-cloudinit/blob/master/Documentation/cloud-config.md#update).
+
 The default strategy is `best-effort`.
 
 ## Usage
+
+`locksmithctl` is a simple client that can be use to introspect and control the
+lock used by locksmith.  It is installed by default on CoreOS.
 
 ### Listing the Holders
 
@@ -37,14 +43,14 @@ MACHINE ID
 ### Unlock Holders
 
 In some cases a machine may go away permanently or semi-permanently while
-holding a reboot lock. A system administrator can clear this lock using the
-unlock command.
+holding a reboot lock. A system administrator can clear the lock of a specific
+machine using the unlock command:
 
 ```
 $ locksmithctl unlock 69d27b356a94476da859461d3a3bc6fd
 ```
 
-### Maximum Sempahore
+### Maximum Semaphore
 
 By default the reboot lock only allows a single holder. However, a user may
 want more than a single machine to be upgrading at a time. This can be done by
@@ -56,14 +62,20 @@ Old: 1
 New: 4
 ```
 
-## Keyspace
+
+## Implementation details 
+
+The following section describes how locksmith works under the hood.
 
 ### Semaphore
 
-Key: `coreos.com/updateengine/rebootlock/semaphore`
+locksmith uses a [semaphore][semaphore] in etcd (located at the key
+`coreos.com/updateengine/rebootlock/semaphore`) to coordinate the reboot lock.
 
-The semaphore is a json document describing a simple semaphore that clients swap
-to take the lock. When it is first created it will be initialized like so:
+The semaphore is a JSON document, describing a simple semaphore, that clients [swap][cas]
+to take the lock. 
+
+When it is first created it will be initialized like so:
 
 ```json
 {
@@ -73,7 +85,7 @@ to take the lock. When it is first created it will be initialized like so:
 }
 ```
 
-For a client to take the lock, the document will be swapped with this:
+For a client to take the lock, the document is swapped with this:
 
 ```json
 {
@@ -84,3 +96,6 @@ For a client to take the lock, the document will be swapped with this:
 	]
 }
 ```
+
+[semaphore]: http://en.wikipedia.org/wiki/Semaphore_(programming)
+[cas]: https://github.com/coreos/etcd/blob/master/Documentation/api.md#atomic-compare-and-swap
