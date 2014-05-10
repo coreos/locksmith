@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/dbus"
@@ -109,7 +110,7 @@ func etcdActive() (running bool, err error) {
 
 type rebooter struct {
 	strategy string
-	lgn *login1.Conn
+	lgn      *login1.Conn
 }
 
 func (r rebooter) useLock() (useLock bool, err error) {
@@ -180,7 +181,8 @@ func unlockIfHeld(lck *lock.Lock) error {
 
 // unlockHeldLock will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
-func unlockHeldLocks(stop chan struct{}) {
+func unlockHeldLocks(stop chan struct{}, wg sync.WaitGroup) {
+	defer wg.Done()
 	tries := 0
 	var sleep time.Duration
 	for {
@@ -236,9 +238,11 @@ func runDaemon(args []string) int {
 		return 1
 	}
 
+	var wg sync.WaitGroup
 	stopUnlock := make(chan struct{}, 1)
 	if strategy != StrategyReboot {
-		go unlockHeldLocks(stopUnlock)
+		wg.Add(1)
+		go unlockHeldLocks(stopUnlock, wg)
 	}
 
 	ch := make(chan updateengine.Status, 1)
@@ -262,5 +266,7 @@ func runDaemon(args []string) int {
 	}
 
 	close(stopUnlock)
+	wg.Wait()
+
 	return r.reboot()
 }
