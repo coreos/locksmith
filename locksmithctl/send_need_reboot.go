@@ -11,11 +11,11 @@ import (
 
 var (
 	cmdSendNeedReboot = &Command{
-		Name:        "send-need-reboot",
-		Summary:     "send a 'need reboot' signal over dbus.",
+		Name:    "send-need-reboot",
+		Summary: "send a 'need reboot' signal over dbus.",
 		Description: `Send a fake 'need reboot' signal to test locksmithd
 without a full update cycle via update engine.`,
-		Run:         runSendNeedReboot,
+		Run: runSendNeedReboot,
 	}
 )
 
