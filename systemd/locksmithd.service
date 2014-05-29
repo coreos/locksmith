@@ -6,6 +6,9 @@ ConditionVirtualization=!container
 ConditionPathExists=!/usr/.noupdate
 
 [Service]
+CPUShares=16
+MemoryLimit=32Mb
+PrivateDevices=true
 EnvironmentFile=-/usr/share/coreos/update.conf
 EnvironmentFile=-/etc/coreos/update.conf
 ExecStart=/usr/lib/locksmith/locksmithd
