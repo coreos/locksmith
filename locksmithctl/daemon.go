@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"sync"
 	"time"
@@ -25,8 +24,8 @@ var (
 )
 
 const (
-	initialTimeout = time.Second * 5
-	maxTimeout     = time.Minute * 5
+	initialInterval = time.Second * 5
+	maxInterval = time.Minute * 5
 )
 
 const (
@@ -35,13 +34,12 @@ const (
 	StrategyBestEffort = "best-effort"
 )
 
-func expBackoff(try int) time.Duration {
-	sleep := time.Duration(math.Pow(2, float64(try))) * initialTimeout
-	if sleep > maxTimeout {
-		sleep = maxTimeout
+func expBackoff(interval time.Duration) time.Duration {
+	interval = interval * 2
+	if interval > maxInterval {
+		interval = maxInterval
 	}
-
-	return sleep
+	return interval
 }
 
 func rebootAndSleep(lgn *login1.Conn) {
@@ -55,14 +53,13 @@ func rebootAndSleep(lgn *login1.Conn) {
 // lockAndReboot attempts to acquire the lock and reboot the machine in an
 // infinite loop. Returns if the reboot failed.
 func (r rebooter) lockAndReboot(lck *lock.Lock) {
-	tries := 0
+	interval := initialInterval
 	for {
 		err := lck.Lock()
 		if err != nil && err != lock.ErrExist {
-			sleep := expBackoff(tries)
-			fmt.Printf("Retrying in %v. Error locking: %v\n", sleep, err)
-			time.Sleep(sleep)
-			tries = tries + 1
+			interval = expBackoff(interval)
+			fmt.Printf("Retrying in %v. Error locking: %v\n", interval, err)
+			time.Sleep(interval)
 
 			continue
 		}
@@ -183,14 +180,13 @@ func unlockIfHeld(lck *lock.Lock) error {
 // released or a stop signal is sent.
 func unlockHeldLocks(stop chan struct{}, wg sync.WaitGroup) {
 	defer wg.Done()
-	tries := 0
-	var sleep time.Duration
+	interval := initialInterval
 	for {
 		var reason string
 		select {
 		case <-stop:
 			return
-		case <-time.After(sleep):
+		case <-time.After(interval):
 			active, err := etcdActive()
 			if err != nil {
 				reason = "error checking on etcd.service"
@@ -214,9 +210,8 @@ func unlockHeldLocks(stop chan struct{}, wg sync.WaitGroup) {
 			reason = err.Error()
 		}
 
-		sleep = expBackoff(tries)
-		fmt.Printf("Unlocking old locks failed: %v. Retrying in %v.\n", reason, sleep)
-		tries = tries + 1
+		interval = expBackoff(interval)
+		fmt.Printf("Unlocking old locks failed: %v. Retrying in %v.\n", reason, interval)
 	}
 }
 
