@@ -178,7 +178,7 @@ func unlockIfHeld(lck *lock.Lock) error {
 
 // unlockHeldLock will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
-func unlockHeldLocks(stop chan struct{}, wg sync.WaitGroup) {
+func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	interval := initialInterval
 	for {
@@ -237,7 +237,7 @@ func runDaemon(args []string) int {
 	stopUnlock := make(chan struct{}, 1)
 	if strategy != StrategyReboot {
 		wg.Add(1)
-		go unlockHeldLocks(stopUnlock, wg)
+		go unlockHeldLocks(stopUnlock, &wg)
 	}
 
 	ch := make(chan updateengine.Status, 1)
