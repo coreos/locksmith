@@ -13,7 +13,7 @@ func TestExpBackoff(t *testing.T) {
 			t.Fatalf("interval too small: %v %v", interval, i)
 		}
 		if interval > maxInterval {
-			t.Fatal("interval too large: %v %v", interval, i)
+			t.Fatalf("interval too large: %v %v", interval, i)
 		}
 	}
 }
