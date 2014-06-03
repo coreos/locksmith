@@ -7,7 +7,7 @@ ConditionPathExists=!/usr/.noupdate
 
 [Service]
 CPUShares=16
-MemoryLimit=32Mb
+MemoryLimit=32M
 PrivateDevices=true
 EnvironmentFile=-/usr/share/coreos/update.conf
 EnvironmentFile=-/etc/coreos/update.conf
