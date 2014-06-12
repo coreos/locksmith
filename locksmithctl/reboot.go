@@ -19,6 +19,11 @@ var (
 )
 
 func runReboot(args []string) int {
+	if os.Geteuid() != 0 {
+		fmt.Fprintln(os.Stderr, "Must be root to initiate reboot.")
+		return 1
+	}
+
 	elc, _ := lock.NewEtcdLockClient(nil)
 	lgn, err := login1.New()
 	if err != nil {
