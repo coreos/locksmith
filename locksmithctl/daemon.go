@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/dbus"
@@ -25,7 +27,7 @@ var (
 
 const (
 	initialInterval = time.Second * 5
-	maxInterval = time.Minute * 5
+	maxInterval     = time.Minute * 5
 )
 
 const (
@@ -216,6 +218,9 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 }
 
 func runDaemon(args []string) int {
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
 	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
 	if strategy == "" {
 		strategy = StrategyBestEffort
@@ -257,7 +262,13 @@ func runDaemon(args []string) int {
 	)
 
 	if result.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
-		<-ch
+		select {
+		case <-shutdown:
+			fmt.Fprintln(os.Stderr, "Received termination signal - shutting down.")
+			os.Exit(0)
+		case <-ch:
+			break
+		}
 	}
 
 	close(stopUnlock)
