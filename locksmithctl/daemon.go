@@ -219,6 +219,13 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 
 func runDaemon(args []string) int {
 	shutdown := make(chan os.Signal, 1)
+	stop := make(chan struct{}, 1)
+	go func() {
+		<-shutdown
+		fmt.Fprintln(os.Stderr, "Received interrupt/termination signal - shutting down.")
+		close(stop)
+		os.Exit(0)
+	}()
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
@@ -239,14 +246,13 @@ func runDaemon(args []string) int {
 	}
 
 	var wg sync.WaitGroup
-	stopUnlock := make(chan struct{}, 1)
 	if strategy != StrategyReboot {
 		wg.Add(1)
-		go unlockHeldLocks(stopUnlock, &wg)
+		go unlockHeldLocks(stop, &wg)
 	}
 
 	ch := make(chan updateengine.Status, 1)
-	go ue.RebootNeededSignal(ch)
+	go ue.RebootNeededSignal(ch, stop)
 
 	r := rebooter{strategy, lgn}
 
@@ -262,16 +268,10 @@ func runDaemon(args []string) int {
 	)
 
 	if result.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
-		select {
-		case <-shutdown:
-			fmt.Fprintln(os.Stderr, "Received termination signal - shutting down.")
-			os.Exit(0)
-		case <-ch:
-			break
-		}
+		<-ch
 	}
 
-	close(stopUnlock)
+	close(stop)
 	wg.Wait()
 
 	return r.reboot()

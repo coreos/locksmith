@@ -2,9 +2,10 @@ package updateengine
 
 import (
 	"fmt"
-	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 	"os"
 	"strconv"
+
+	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
 
 const (
@@ -60,9 +61,11 @@ func New() (c *Client, err error) {
 	return c, nil
 }
 
-func (c *Client) RebootNeededSignal(rcvr chan Status) {
-	for {
-		signal := <-c.ch
+func (c *Client) RebootNeededSignal(rcvr chan Status, stop chan struct{}) {
+	select {
+	case <-stop:
+		return
+	case signal := <-c.ch:
 		s := NewStatus(signal.Body)
 		println(s.String())
 		if s.CurrentOperation == UpdateStatusUpdatedNeedReboot {
@@ -81,9 +84,4 @@ func (c *Client) GetStatus() (result Status, err error) {
 	result = NewStatus(call.Body)
 
 	return
-}
-
-func (c *Client) Close() {
-	c.conn.Close()
-	close(c.ch)
 }
