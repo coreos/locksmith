@@ -223,7 +223,6 @@ func runDaemon(args []string) int {
 	go func() {
 		<-shutdown
 		fmt.Fprintln(os.Stderr, "Received interrupt/termination signal - shutting down.")
-		close(stop)
 		os.Exit(0)
 	}()
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
