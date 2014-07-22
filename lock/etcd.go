@@ -75,5 +75,5 @@ func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
 
 	_, err = c.client.CompareAndSwap(SemaphorePrefix, string(b), 0, "", sem.Index)
 
-	return nil
+	return err
 }
