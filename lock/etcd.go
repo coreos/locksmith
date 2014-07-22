@@ -2,6 +2,7 @@ package lock
 
 import (
 	"encoding/json"
+	"errors"
 
 	etcdError "github.com/coreos/locksmith/third_party/github.com/coreos/etcd/error"
 	"github.com/coreos/locksmith/third_party/github.com/coreos/go-etcd/etcd"
@@ -74,6 +75,9 @@ func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
 
 // Set sets a Semaphore in etcd.
 func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
+	if sem == nil {
+		return errors.New("cannot set nil semaphore")
+	}
 	b, err := json.Marshal(sem)
 	if err != nil {
 		return err
