@@ -13,11 +13,18 @@ const (
 	SemaphorePrefix = keyPrefix + "/semaphore"
 )
 
+// etcdInterface is a simple wrapper around the go-etcd client to facilitate testing
+type etcdInterface interface {
+	Create(key string, value string, ttl uint64) (*etcd.Response, error)
+	CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*etcd.Response, error)
+	Get(key string, sort, recursive bool) (*etcd.Response, error)
+}
+
 // EtcdLockClient is a wrapper around the go-etcd client that provides
 // simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
-	client *etcd.Client
+	client etcdInterface
 }
 
 func NewEtcdLockClient(machines []string) (client *EtcdLockClient, err error) {
