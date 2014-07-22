@@ -6,17 +6,24 @@ if [ -z "$PKG" ]; then
 	PKG="./updateengine ./lock ./locksmithctl"
 	GOFMTPATH="$PKG"
 else
+	PKG=${PKG//\//}
+	PKG=${PKG//./}
 	GOFMTPATH="$PKG"
 fi
 
-# Unit tests
-echo
-go test -i $PKG
-go test -cover -v $PKG
+# split packages into an array and prepend repo to each local package
+split=(${PKG// / })
+TEST=${split[@]/#/github.com/coreos/locksmith/}
 
-fmtRes=`gofmt -l $GOFMTPATH`
-if [ "$fmtRes" != "" ]; then
-	echo "Failed to pass golang format checking:"
-	echo $fmtRes
-	exit 1
+echo "Running tests..."
+go test -i $TEST
+go test ${COVER} $@ ${TEST}
+
+echo "Checking gofmt..."
+fmtRes=$(gofmt -l $GOFMTPATH)
+if [ -n "${fmtRes}" ]; then
+	echo -e "gofmt checking failed:\n${fmtRes}"
+	exit 255
 fi
+
+echo "Success"
