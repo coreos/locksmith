@@ -62,14 +62,16 @@ func New() (c *Client, err error) {
 }
 
 func (c *Client) RebootNeededSignal(rcvr chan Status, stop chan struct{}) {
-	select {
-	case <-stop:
-		return
-	case signal := <-c.ch:
-		s := NewStatus(signal.Body)
-		println(s.String())
-		if s.CurrentOperation == UpdateStatusUpdatedNeedReboot {
-			rcvr <- s
+	for {
+		select {
+		case <-stop:
+			return
+		case signal := <-c.ch:
+			s := NewStatus(signal.Body)
+			println(s.String())
+			if s.CurrentOperation == UpdateStatusUpdatedNeedReboot {
+				rcvr <- s
+			}
 		}
 	}
 }
