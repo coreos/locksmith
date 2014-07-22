@@ -36,7 +36,6 @@ func (c *EtcdLockClient) Init() (err error) {
 		return err
 	}
 
-	// TODO(philips):
 	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
 	if err != nil {
 		eerr, ok := err.(*etcd.EtcdError)
