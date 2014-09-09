@@ -2,6 +2,7 @@ package lock
 
 import (
 	"encoding/json"
+	"errors"
 
 	etcdError "github.com/coreos/locksmith/third_party/github.com/coreos/etcd/error"
 	"github.com/coreos/locksmith/third_party/github.com/coreos/go-etcd/etcd"
@@ -13,11 +14,18 @@ const (
 	SemaphorePrefix = keyPrefix + "/semaphore"
 )
 
+// etcdInterface is a simple wrapper around the go-etcd client to facilitate testing
+type etcdInterface interface {
+	Create(key string, value string, ttl uint64) (*etcd.Response, error)
+	CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*etcd.Response, error)
+	Get(key string, sort, recursive bool) (*etcd.Response, error)
+}
+
 // EtcdLockClient is a wrapper around the go-etcd client that provides
 // simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
-	client *etcd.Client
+	client etcdInterface
 }
 
 func NewEtcdLockClient(machines []string) (client *EtcdLockClient, err error) {
@@ -67,6 +75,9 @@ func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
 
 // Set sets a Semaphore in etcd.
 func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
+	if sem == nil {
+		return errors.New("cannot set nil semaphore")
+	}
 	b, err := json.Marshal(sem)
 	if err != nil {
 		return err
