@@ -94,6 +94,7 @@ func etcdActive() (running bool, err error) {
 	if err != nil {
 		return false, err
 	}
+	defer sys.Close()
 
 	prop, err := sys.GetUnitProperty("etcd.service", "ActiveState")
 	if err != nil {
