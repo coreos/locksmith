@@ -25,7 +25,7 @@ func runSetMax(args []string) (exit int) {
 		return 1
 	}
 
-	elc, err := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient([]string{globalFlags.Endpoint})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
 		return 1
