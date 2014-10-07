@@ -118,7 +118,7 @@ func (r rebooter) lockAndReboot(lck *lock.Lock) {
 }
 
 func setupLock() (lck *lock.Lock, err error) {
-	elc, err := lock.NewEtcdLockClient([]string{globalFlags.Endpoint})
+	elc, err := getClient()
 	if err != nil {
 		return nil, fmt.Errorf("Error initializing etcd client: %v", err)
 	}
