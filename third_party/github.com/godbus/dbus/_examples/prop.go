@@ -46,14 +46,14 @@ func main() {
 	conn.Export(f, "/com/github/guelfey/Demo", "com.github.guelfey.Demo")
 	props := prop.New(conn, "/com/github/guelfey/Demo", propsSpec)
 	n := &introspect.Node{
-		Name:	"/com/github/guelfey/Demo",
+		Name: "/com/github/guelfey/Demo",
 		Interfaces: []introspect.Interface{
 			introspect.IntrospectData,
 			prop.IntrospectData,
 			{
-				Name:		"com.github.guelfey.Demo",
-				Methods:	introspect.Methods(f),
-				Properties:	props.Introspection("com.github.guelfey.Demo"),
+				Name:       "com.github.guelfey.Demo",
+				Methods:    introspect.Methods(f),
+				Properties: props.Introspection("com.github.guelfey.Demo"),
 			},
 		},
 	}

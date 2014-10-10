@@ -37,19 +37,19 @@ import (
 // add to the scope object.
 
 type Property struct {
-	Name	string
-	Value	dbus.Variant
+	Name  string
+	Value dbus.Variant
 }
 
 type PropertyCollection struct {
-	Name		string
-	Properties	[]Property
+	Name       string
+	Properties []Property
 }
 
 type execStart struct {
-	Path			string		// the binary path to execute
-	Args			[]string	// an array with all arguments to pass to the executed command, starting with argument 0
-	UncleanIsFailure	bool		// a boolean whether it should be considered a failure if the process exits uncleanly
+	Path             string   // the binary path to execute
+	Args             []string // an array with all arguments to pass to the executed command, starting with argument 0
+	UncleanIsFailure bool     // a boolean whether it should be considered a failure if the process exits uncleanly
 }
 
 // PropExecStart sets the ExecStart service property.  The first argument is a
@@ -59,15 +59,15 @@ type execStart struct {
 func PropExecStart(command []string, uncleanIsFailure bool) Property {
 	execStarts := []execStart{
 		execStart{
-			Path:			command[0],
-			Args:			command,
-			UncleanIsFailure:	uncleanIsFailure,
+			Path:             command[0],
+			Args:             command,
+			UncleanIsFailure: uncleanIsFailure,
 		},
 	}
 
 	return Property{
-		Name:	"ExecStart",
-		Value:	dbus.MakeVariant(execStarts),
+		Name:  "ExecStart",
+		Value: dbus.MakeVariant(execStarts),
 	}
 }
 
@@ -75,8 +75,8 @@ func PropExecStart(command []string, uncleanIsFailure bool) Property {
 // http://www.freedesktop.org/software/systemd/man/systemd.service.html#RemainAfterExit=
 func PropRemainAfterExit(b bool) Property {
 	return Property{
-		Name:	"RemainAfterExit",
-		Value:	dbus.MakeVariant(b),
+		Name:  "RemainAfterExit",
+		Value: dbus.MakeVariant(b),
 	}
 }
 
@@ -84,15 +84,15 @@ func PropRemainAfterExit(b bool) Property {
 // http://www.freedesktop.org/software/systemd/man/systemd.unit#Description=
 func PropDescription(desc string) Property {
 	return Property{
-		Name:	"Description",
-		Value:	dbus.MakeVariant(desc),
+		Name:  "Description",
+		Value: dbus.MakeVariant(desc),
 	}
 }
 
 func propDependency(name string, units []string) Property {
 	return Property{
-		Name:	name,
-		Value:	dbus.MakeVariant(units),
+		Name:  name,
+		Value: dbus.MakeVariant(units),
 	}
 }
 
@@ -214,7 +214,7 @@ func PropRequiresMountsFor(units ...string) Property {
 // http://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#Slice=
 func PropSlice(slice string) Property {
 	return Property{
-		Name:	"Slice",
-		Value:	dbus.MakeVariant(slice),
+		Name:  "Slice",
+		Value: dbus.MakeVariant(slice),
 	}
 }

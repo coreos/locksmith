@@ -25,12 +25,15 @@ func TestSubscriptionSetUnit(t *testing.T) {
 
 	subSet.Add(target)
 	setupUnit(target, conn, t)
+	linkUnit(target, conn, t)
 
-	job, err := conn.StartUnit(target, "replace")
+	reschan := make(chan string)
+	_, err = conn.StartUnit(target, "replace", reschan)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	job := <-reschan
 	if job != "done" {
 		t.Fatal("Couldn't start", target)
 	}
@@ -47,7 +50,7 @@ func TestSubscriptionSetUnit(t *testing.T) {
 			tCh, ok := changes[target]
 
 			if !ok {
-				t.Fatal("Unexpected event %v", changes)
+				t.Fatal("Unexpected event:", changes)
 			}
 
 			if tCh.ActiveState == "active" && tCh.Name == target {
@@ -63,5 +66,3 @@ func TestSubscriptionSetUnit(t *testing.T) {
 success:
 	return
 }
-
-
