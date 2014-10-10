@@ -15,33 +15,33 @@ import (
 type EmitType byte
 
 const (
-	EmitFalse	EmitType	= iota
+	EmitFalse EmitType = iota
 	EmitTrue
 	EmitInvalidates
 )
 
 // ErrIfaceNotFound is the error returned to peers who try to access properties
 // on interfaces that aren't found.
-var ErrIfaceNotFound = &dbus.Error{"org.freedesktop.DBus.Properties.Error.InterfaceNotFound", nil}
+var ErrIfaceNotFound = dbus.NewError("org.freedesktop.DBus.Properties.Error.InterfaceNotFound", nil)
 
 // ErrPropNotFound is the error returned to peers trying to access properties
 // that aren't found.
-var ErrPropNotFound = &dbus.Error{"org.freedesktop.DBus.Properties.Error.PropertyNotFound", nil}
+var ErrPropNotFound = dbus.NewError("org.freedesktop.DBus.Properties.Error.PropertyNotFound", nil)
 
 // ErrReadOnly is the error returned to peers trying to set a read-only
 // property.
-var ErrReadOnly = &dbus.Error{"org.freedesktop.DBus.Properties.Error.ReadOnly", nil}
+var ErrReadOnly = dbus.NewError("org.freedesktop.DBus.Properties.Error.ReadOnly", nil)
 
 // ErrInvalidArg is returned to peers if the type of the property that is being
 // changed and the argument don't match.
-var ErrInvalidArg = &dbus.Error{"org.freedesktop.DBus.Properties.Error.InvalidArg", nil}
+var ErrInvalidArg = dbus.NewError("org.freedesktop.DBus.Properties.Error.InvalidArg", nil)
 
 // The introspection data for the org.freedesktop.DBus.Properties interface.
 var IntrospectData = introspect.Interface{
-	Name:	"org.freedesktop.DBus.Properties",
+	Name: "org.freedesktop.DBus.Properties",
 	Methods: []introspect.Method{
 		{
-			Name:	"Get",
+			Name: "Get",
 			Args: []introspect.Arg{
 				{"interface", "s", "in"},
 				{"property", "s", "in"},
@@ -49,14 +49,14 @@ var IntrospectData = introspect.Interface{
 			},
 		},
 		{
-			Name:	"GetAll",
+			Name: "GetAll",
 			Args: []introspect.Arg{
 				{"interface", "s", "in"},
 				{"props", "a{sv}", "out"},
 			},
 		},
 		{
-			Name:	"Set",
+			Name: "Set",
 			Args: []introspect.Arg{
 				{"interface", "s", "in"},
 				{"property", "s", "in"},
@@ -66,7 +66,7 @@ var IntrospectData = introspect.Interface{
 	},
 	Signals: []introspect.Signal{
 		{
-			Name:	"PropertiesChanged",
+			Name: "PropertiesChanged",
 			Args: []introspect.Arg{
 				{"interface", "s", "out"},
 				{"changed_properties", "a{sv}", "out"},
@@ -106,38 +106,38 @@ const IntrospectDataString = `
 // value.
 type Prop struct {
 	// Initial value. Must be a DBus-representable type.
-	Value	interface{}
+	Value interface{}
 
 	// If true, the value can be modified by calls to Set.
-	Writable	bool
+	Writable bool
 
 	// Controls how org.freedesktop.DBus.Properties.PropertiesChanged is
 	// emitted if this property changes.
-	Emit	EmitType
+	Emit EmitType
 
 	// If not nil, anytime this property is changed by Set, this function is
 	// called with an appropiate Change as its argument. If the returned error
 	// is not nil, it is sent back to the caller of Set and the property is not
 	// changed.
-	Callback	func(*Change) *dbus.Error
+	Callback func(*Change) *dbus.Error
 }
 
 // Change represents a change of a property by a call to Set.
 type Change struct {
-	Props	*Properties
-	Iface	string
-	Name	string
-	Value	interface{}
+	Props *Properties
+	Iface string
+	Name  string
+	Value interface{}
 }
 
 // Properties is a set of values that can be made available to the message bus
 // using the org.freedesktop.DBus.Properties interface. It is safe for
 // concurrent use by multiple goroutines.
 type Properties struct {
-	m	map[string]map[string]*Prop
-	mut	sync.RWMutex
-	conn	*dbus.Conn
-	path	dbus.ObjectPath
+	m    map[string]map[string]*Prop
+	mut  sync.RWMutex
+	conn *dbus.Conn
+	path dbus.ObjectPath
 }
 
 // New returns a new Properties structure that manages the given properties.

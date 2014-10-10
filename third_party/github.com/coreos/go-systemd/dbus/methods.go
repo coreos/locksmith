@@ -18,12 +18,11 @@ package dbus
 
 import (
 	"errors"
+	"path"
+	"strconv"
+
 	"github.com/coreos/locksmith/third_party/github.com/godbus/dbus"
 )
-
-func (c *Conn) initJobs() {
-	c.jobListener.jobs = make(map[dbus.ObjectPath]chan string)
-}
 
 func (c *Conn) jobComplete(signal *dbus.Signal) {
 	var id uint32
@@ -40,29 +39,29 @@ func (c *Conn) jobComplete(signal *dbus.Signal) {
 	c.jobListener.Unlock()
 }
 
-func (c *Conn) startJob(job string, args ...interface{}) (<-chan string, error) {
-	c.jobListener.Lock()
-	defer c.jobListener.Unlock()
-
-	ch := make(chan string, 1)
-	var path dbus.ObjectPath
-	err := c.sysobj.Call(job, 0, args...).Store(&path)
-	if err != nil {
-		return nil, err
+func (c *Conn) startJob(ch chan<- string, job string, args ...interface{}) (int, error) {
+	if ch != nil {
+		c.jobListener.Lock()
+		defer c.jobListener.Unlock()
 	}
-	c.jobListener.jobs[path] = ch
-	return ch, nil
+
+	var p dbus.ObjectPath
+	err := c.sysobj.Call(job, 0, args...).Store(&p)
+	if err != nil {
+		return 0, err
+	}
+
+	if ch != nil {
+		c.jobListener.jobs[p] = ch
+	}
+
+	// ignore error since 0 is fine if conversion fails
+	jobID, _ := strconv.Atoi(path.Base(string(p)))
+
+	return jobID, nil
 }
 
-func (c *Conn) runJob(job string, args ...interface{}) (string, error) {
-	respCh, err := c.startJob(job, args...)
-	if err != nil {
-		return "", err
-	}
-	return <-respCh, nil
-}
-
-// StartUnit enqeues a start job and depending jobs, if any (unless otherwise
+// StartUnit enqueues a start job and depending jobs, if any (unless otherwise
 // specified by the mode string).
 //
 // Takes the unit to activate, plus a mode string. The mode needs to be one of
@@ -77,50 +76,58 @@ func (c *Conn) runJob(job string, args ...interface{}) (string, error) {
 // requirement dependencies. It is not recommended to make use of the latter
 // two options.
 //
-// Result string: one of done, canceled, timeout, failed, dependency, skipped.
+// If the provided channel is non-nil, a result string will be sent to it upon
+// job completion: one of done, canceled, timeout, failed, dependency, skipped.
 // done indicates successful execution of a job. canceled indicates that a job
 // has been canceled  before it finished execution. timeout indicates that the
 // job timeout was reached. failed indicates that the job failed. dependency
 // indicates that a job this job has been depending on failed and the job hence
 // has been removed too. skipped indicates that a job was skipped because it
 // didn't apply to the units current state.
-func (c *Conn) StartUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.StartUnit", name, mode)
+//
+// If no error occurs, the ID of the underlying systemd job will be returned. There
+// does exist the possibility for no error to be returned, but for the returned job
+// ID to be 0. In this case, the actual underlying ID is not 0 and this datapoint
+// should not be considered authoritative.
+//
+// If an error does occur, it will be returned to the user alongside a job ID of 0.
+func (c *Conn) StartUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.StartUnit", name, mode)
 }
 
 // StopUnit is similar to StartUnit but stops the specified unit rather
 // than starting it.
-func (c *Conn) StopUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.StopUnit", name, mode)
+func (c *Conn) StopUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.StopUnit", name, mode)
 }
 
 // ReloadUnit reloads a unit.  Reloading is done only if the unit is already running and fails otherwise.
-func (c *Conn) ReloadUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.ReloadUnit", name, mode)
+func (c *Conn) ReloadUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.ReloadUnit", name, mode)
 }
 
 // RestartUnit restarts a service.  If a service is restarted that isn't
 // running it will be started.
-func (c *Conn) RestartUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.RestartUnit", name, mode)
+func (c *Conn) RestartUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.RestartUnit", name, mode)
 }
 
 // TryRestartUnit is like RestartUnit, except that a service that isn't running
 // is not affected by the restart.
-func (c *Conn) TryRestartUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.TryRestartUnit", name, mode)
+func (c *Conn) TryRestartUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.TryRestartUnit", name, mode)
 }
 
 // ReloadOrRestart attempts a reload if the unit supports it and use a restart
 // otherwise.
-func (c *Conn) ReloadOrRestartUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.ReloadOrRestartUnit", name, mode)
+func (c *Conn) ReloadOrRestartUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.ReloadOrRestartUnit", name, mode)
 }
 
 // ReloadOrTryRestart attempts a reload if the unit supports it and use a "Try"
 // flavored restart otherwise.
-func (c *Conn) ReloadOrTryRestartUnit(name string, mode string) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.ReloadOrTryRestartUnit", name, mode)
+func (c *Conn) ReloadOrTryRestartUnit(name string, mode string, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.ReloadOrTryRestartUnit", name, mode)
 }
 
 // StartTransientUnit() may be used to create and start a transient unit, which
@@ -128,8 +135,8 @@ func (c *Conn) ReloadOrTryRestartUnit(name string, mode string) (string, error) 
 // system is rebooted. name is the unit name including suffix, and must be
 // unique. mode is the same as in StartUnit(), properties contains properties
 // of the unit.
-func (c *Conn) StartTransientUnit(name string, mode string, properties ...Property) (string, error) {
-	return c.runJob("org.freedesktop.systemd1.Manager.StartTransientUnit", name, mode, properties, make([]PropertyCollection, 0))
+func (c *Conn) StartTransientUnit(name string, mode string, properties []Property, ch chan<- string) (int, error) {
+	return c.startJob(ch, "org.freedesktop.systemd1.Manager.StartTransientUnit", name, mode, properties, make([]PropertyCollection, 0))
 }
 
 // KillUnit takes the unit name and a UNIX signal number to send.  All of the unit's
@@ -138,12 +145,17 @@ func (c *Conn) KillUnit(name string, signal int32) {
 	c.sysobj.Call("org.freedesktop.systemd1.Manager.KillUnit", 0, name, "all", signal).Store()
 }
 
+// ResetFailedUnit resets the "failed" state of a specific unit.
+func (c *Conn) ResetFailedUnit(name string) error {
+	return c.sysobj.Call("org.freedesktop.systemd1.Manager.ResetFailedUnit", 0, name).Store()
+}
+
 // getProperties takes the unit name and returns all of its dbus object properties, for the given dbus interface
 func (c *Conn) getProperties(unit string, dbusInterface string) (map[string]interface{}, error) {
 	var err error
 	var props map[string]dbus.Variant
 
-	path := ObjectPath("/org/freedesktop/systemd1/unit/" + unit)
+	path := unitPath(unit)
 	if !path.IsValid() {
 		return nil, errors.New("invalid unit name: " + unit)
 	}
@@ -171,7 +183,7 @@ func (c *Conn) getProperty(unit string, dbusInterface string, propertyName strin
 	var err error
 	var prop dbus.Variant
 
-	path := ObjectPath("/org/freedesktop/systemd1/unit/" + unit)
+	path := unitPath(unit)
 	if !path.IsValid() {
 		return nil, errors.New("invalid unit name: " + unit)
 	}
@@ -204,7 +216,7 @@ func (c *Conn) GetUnitTypeProperties(unit string, unitType string) (map[string]i
 // to modify. properties are the settings to set, encoded as an array of property
 // name and value pairs.
 func (c *Conn) SetUnitProperties(name string, runtime bool, properties ...Property) error {
-	return c.sysobj.Call("SetUnitProperties", 0, name, runtime, properties).Store()
+	return c.sysobj.Call("org.freedesktop.systemd1.Manager.SetUnitProperties", 0, name, runtime, properties).Store()
 }
 
 func (c *Conn) GetUnitTypeProperty(unit string, unitType string, propertyName string) (*Property, error) {
@@ -241,16 +253,58 @@ func (c *Conn) ListUnits() ([]UnitStatus, error) {
 }
 
 type UnitStatus struct {
-	Name		string		// The primary unit name as string
-	Description	string		// The human readable description string
-	LoadState	string		// The load state (i.e. whether the unit file has been loaded successfully)
-	ActiveState	string		// The active state (i.e. whether the unit is currently started or not)
-	SubState	string		// The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)
-	Followed	string		// A unit that is being followed in its state by this unit, if there is any, otherwise the empty string.
-	Path		dbus.ObjectPath	// The unit object path
-	JobId		uint32		// If there is a job queued for the job unit the numeric job id, 0 otherwise
-	JobType		string		// The job type as string
-	JobPath		dbus.ObjectPath	// The job object path
+	Name        string          // The primary unit name as string
+	Description string          // The human readable description string
+	LoadState   string          // The load state (i.e. whether the unit file has been loaded successfully)
+	ActiveState string          // The active state (i.e. whether the unit is currently started or not)
+	SubState    string          // The sub state (a more fine-grained version of the active state that is specific to the unit type, which the active state is not)
+	Followed    string          // A unit that is being followed in its state by this unit, if there is any, otherwise the empty string.
+	Path        dbus.ObjectPath // The unit object path
+	JobId       uint32          // If there is a job queued for the job unit the numeric job id, 0 otherwise
+	JobType     string          // The job type as string
+	JobPath     dbus.ObjectPath // The job object path
+}
+
+type LinkUnitFileChange EnableUnitFileChange
+
+// LinkUnitFiles() links unit files (that are located outside of the
+// usual unit search paths) into the unit search path.
+//
+// It takes a list of absolute paths to unit files to link and two
+// booleans. The first boolean controls whether the unit shall be
+// enabled for runtime only (true, /run), or persistently (false,
+// /etc).
+// The second controls whether symlinks pointing to other units shall
+// be replaced if necessary.
+//
+// This call returns a list of the changes made. The list consists of
+// structures with three strings: the type of the change (one of symlink
+// or unlink), the file name of the symlink and the destination of the
+// symlink.
+func (c *Conn) LinkUnitFiles(files []string, runtime bool, force bool) ([]LinkUnitFileChange, error) {
+	result := make([][]interface{}, 0)
+	err := c.sysobj.Call("org.freedesktop.systemd1.Manager.LinkUnitFiles", 0, files, runtime, force).Store(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	resultInterface := make([]interface{}, len(result))
+	for i := range result {
+		resultInterface[i] = result[i]
+	}
+
+	changes := make([]LinkUnitFileChange, len(result))
+	changesInterface := make([]interface{}, len(changes))
+	for i := range changes {
+		changesInterface[i] = &changes[i]
+	}
+
+	err = dbus.Store(resultInterface, changesInterface...)
+	if err != nil {
+		return nil, err
+	}
+
+	return changes, nil
 }
 
 // EnableUnitFiles() may be used to enable one or more units in the system (by
@@ -298,9 +352,9 @@ func (c *Conn) EnableUnitFiles(files []string, runtime bool, force bool) (bool, 
 }
 
 type EnableUnitFileChange struct {
-	Type		string	// Type of the change (one of symlink or unlink)
-	Filename	string	// File name of the symlink
-	Destination	string	// Destination of the symlink
+	Type        string // Type of the change (one of symlink or unlink)
+	Filename    string // File name of the symlink
+	Destination string // Destination of the symlink
 }
 
 // DisableUnitFiles() may be used to disable one or more units in the system (by
@@ -317,7 +371,7 @@ type EnableUnitFileChange struct {
 // symlink.
 func (c *Conn) DisableUnitFiles(files []string, runtime bool) ([]DisableUnitFileChange, error) {
 	result := make([][]interface{}, 0)
-	err := c.sysobj.Call("DisableUnitFiles", 0, files, runtime).Store(&result)
+	err := c.sysobj.Call("org.freedesktop.systemd1.Manager.DisableUnitFiles", 0, files, runtime).Store(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -342,13 +396,17 @@ func (c *Conn) DisableUnitFiles(files []string, runtime bool) ([]DisableUnitFile
 }
 
 type DisableUnitFileChange struct {
-	Type		string	// Type of the change (one of symlink or unlink)
-	Filename	string	// File name of the symlink
-	Destination	string	// Destination of the symlink
+	Type        string // Type of the change (one of symlink or unlink)
+	Filename    string // File name of the symlink
+	Destination string // Destination of the symlink
 }
 
 // Reload instructs systemd to scan for and reload unit files. This is
 // equivalent to a 'systemctl daemon-reload'.
 func (c *Conn) Reload() error {
 	return c.sysobj.Call("org.freedesktop.systemd1.Manager.Reload", 0).Store()
+}
+
+func unitPath(name string) dbus.ObjectPath {
+	return dbus.ObjectPath("/org/freedesktop/systemd1/unit/" + PathBusEscape(name))
 }
