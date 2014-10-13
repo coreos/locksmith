@@ -10,4 +10,4 @@ export GOPATH=${PWD}/gopath
 
 eval $(go env)
 
-go install github.com/coreos/locksmith/locksmithctl
+go install -ldflags "$GOLDFLAGS" github.com/coreos/locksmith/locksmithctl
