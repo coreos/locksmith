@@ -1,5 +1,10 @@
 package main
 
+/*
+#include <utmp.h>
+*/
+import "C"
+
 import (
 	"fmt"
 	"os"
@@ -26,8 +31,9 @@ var (
 )
 
 const (
-	initialInterval = time.Second * 5
-	maxInterval     = time.Minute * 5
+	initialInterval   = time.Second * 5
+	maxInterval       = time.Minute * 5
+	loginsRebootDelay = time.Minute * 5
 )
 
 const (
@@ -35,6 +41,38 @@ const (
 	StrategyEtcdLock   = "etcd-lock"
 	StrategyBestEffort = "best-effort"
 )
+
+// attempt to broadcast msg to all lines registered in utmp
+// returns count of lines successfully opened (and likely broadcasted to)
+func broadcast(msg string) uint {
+	var cnt uint
+	C.setutent()
+
+	for {
+		var utmp *C.struct_utmp
+		utmp = C.getutent()
+		if utmp == nil {
+			break
+		}
+
+		line := C.GoString(&utmp.ut_line[0])
+		tty, _ := os.OpenFile("/dev/"+line, os.O_WRONLY, 0)
+		if tty == nil {
+			// ignore errors, this is just a best-effort courtesy notice
+			continue
+		}
+		cnt++
+		go func() {
+			fmt.Fprintf(tty, "\r%79s\r\n", " ")
+			fmt.Fprintf(tty, "%-79.79s\007\007\r\n", fmt.Sprintf("Broadcast message from locksmithd at %s:", time.Now()))
+			fmt.Fprintf(tty, "%-79.79s\r\n", msg) // msg is assumed to be short and not require wrapping
+			fmt.Fprintf(tty, "\r%79s\r\n", " ")
+			tty.Close()
+		}()
+	}
+
+	return cnt
+}
 
 func expBackoff(interval time.Duration) time.Duration {
 	interval = interval * 2
@@ -45,6 +83,13 @@ func expBackoff(interval time.Duration) time.Duration {
 }
 
 func rebootAndSleep(lgn *login1.Conn) {
+	// Broadcast a notice, if broadcast found lines to notify, delay the reboot.
+	delaymins := loginsRebootDelay / time.Minute
+	lines := broadcast(fmt.Sprintf("System reboot in %d minutes!", delaymins))
+	if 0 != lines {
+		fmt.Printf("Logins detected, delaying reboot for %d minutes.\n", delaymins)
+		time.Sleep(loginsRebootDelay)
+	}
 	lgn.Reboot(false)
 	fmt.Println("Reboot sent. Going to sleep.")
 
