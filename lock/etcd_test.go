@@ -5,8 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	etcdError "github.com/coreos/locksmith/third_party/github.com/coreos/etcd/error"
-	"github.com/coreos/locksmith/third_party/github.com/coreos/go-etcd/etcd"
+	etcdError "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/error"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
 )
 
 type testEtcdClient struct {

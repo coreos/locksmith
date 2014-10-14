@@ -1,0 +1,34 @@
+{
+	"ImportPath": "github.com/coreos/locksmith",
+	"GoVersion": "go1.3.1",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/coreos/etcd/error",
+			"Comment": "v0.3.0-266-ga563d82f95d6",
+			"Rev": "a563d82f95d60c6f3ddf3619ed150e09856daf2f"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v0.2.0-rc1-114-g7745cfd7f8e6",
+			"Rev": "7745cfd7f8e619cc9e6be450238e6253a57a227f"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-systemd/dbus",
+			"Comment": "v2-37-gb8993ebce64e",
+			"Rev": "b8993ebce64e67c4adc749cd6c059edd49c1fc49"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-systemd/login1",
+			"Comment": "v2-37-gb8993ebce64e",
+			"Rev": "b8993ebce64e67c4adc749cd6c059edd49c1fc49"
+		},
+		{
+			"ImportPath": "github.com/godbus/dbus",
+			"Comment": "0-13-g25a4b8ca48c6",
+			"Rev": "25a4b8ca48c64b3d631110fb74a210f56c401e0b"
+		}
+	]
+}
