@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/dbus"
-	"github.com/coreos/locksmith/third_party/github.com/coreos/go-systemd/login1"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-systemd/dbus"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-systemd/login1"
 
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/pkg/machineid"
