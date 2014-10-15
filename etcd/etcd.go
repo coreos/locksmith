@@ -24,7 +24,7 @@ func (e Error) Error() string {
 	return fmt.Sprintf("%v: %v (%v) [%v]", e.ErrorCode, e.Message, e.Cause, e.Index)
 }
 
-type TLSConfig struct {
+type TLSInfo struct {
 	CertFile string
 	KeyFile  string
 	CAFile   string
@@ -36,9 +36,9 @@ const (
 )
 
 // NewClient creates a new EtcdClient
-func NewClient(machines []string, tc *TLSConfig) (EtcdClient, error) {
-	if tc != nil {
-		return etcd.NewTLSClient(machines, tc.CertFile, tc.KeyFile, tc.CAFile)
+func NewClient(machines []string, ti *TLSInfo) (EtcdClient, error) {
+	if ti != nil {
+		return etcd.NewTLSClient(machines, ti.CertFile, ti.KeyFile, ti.CAFile)
 	}
 	return etcd.NewClient(machines), nil
 }

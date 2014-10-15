@@ -113,15 +113,15 @@ func main() {
 // getLockClient returns an initialized EtcdLockClient, using an etcd
 // client configured from the global etcd flags
 func getClient() (*lock.EtcdLockClient, error) {
-	var tc *etcd.TLSConfig
+	var ti *etcd.TLSInfo
 	if globalFlags.EtcdCAFile != "" || globalFlags.EtcdCertFile != "" || globalFlags.EtcdKeyFile != "" {
-		tc = &etcd.TLSConfig{
+		ti = &etcd.TLSInfo{
 			CertFile: globalFlags.EtcdCertFile,
 			KeyFile:  globalFlags.EtcdKeyFile,
 			CAFile:   globalFlags.EtcdCAFile,
 		}
 	}
-	ec, err := etcd.NewClient([]string{globalFlags.Endpoint}, tc)
+	ec, err := etcd.NewClient([]string{globalFlags.Endpoint}, ti)
 	if err != nil {
 		return nil, err
 	}
