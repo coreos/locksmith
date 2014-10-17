@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/coreos/locksmith/etcd"
@@ -84,8 +85,11 @@ func main() {
 
 	progName := os.Args[0]
 	if path.Base(progName) == "locksmithd" {
+		flagsFromEnv("LOCKSMITHD", globalFlagset)
 		os.Exit(runDaemon([]string{}))
 	}
+
+	flagsFromEnv("LOCKSMITHCTL", globalFlagset)
 
 	var cmd *Command
 
@@ -130,4 +134,25 @@ func getClient() (*lock.EtcdLockClient, error) {
 		return nil, err
 	}
 	return lc, err
+}
+
+// flagsFromEnv parses all registered flags in the given flagset,
+// and if they are not already set it attempts to set their values from
+// environment variables. Environment variables take the name of the flag but
+// are UPPERCASE, have the given prefix, and any dashes are replaced by
+// underscores - for example: some-flag => PREFIX_SOME_FLAG
+func flagsFromEnv(prefix string, fs *flag.FlagSet) {
+	alreadySet := make(map[string]bool)
+	fs.Visit(func(f *flag.Flag) {
+		alreadySet[f.Name] = true
+	})
+	fs.VisitAll(func(f *flag.Flag) {
+		if !alreadySet[f.Name] {
+			key := strings.ToUpper(prefix + "_" + strings.Replace(f.Name, "-", "_", -1))
+			val := os.Getenv(key)
+			if val != "" {
+				fs.Set(f.Name, val)
+			}
+		}
+	})
 }
