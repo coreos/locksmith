@@ -24,7 +24,7 @@ func runReboot(args []string) int {
 		return 1
 	}
 
-	elc, err := lock.NewEtcdLockClient([]string{globalFlags.Endpoint})
+	elc, err := getClient()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
 		return 1

@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	etcdError "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/error"
-	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/locksmith/etcd"
 )
 
 const (
@@ -14,26 +13,17 @@ const (
 	SemaphorePrefix = keyPrefix + "/semaphore"
 )
 
-// etcdInterface is a simple wrapper around the go-etcd client to facilitate testing
-type etcdInterface interface {
-	Create(key string, value string, ttl uint64) (*etcd.Response, error)
-	CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*etcd.Response, error)
-	Get(key string, sort, recursive bool) (*etcd.Response, error)
-}
-
-// EtcdLockClient is a wrapper around the go-etcd client that provides
+// EtcdLockClient is a wrapper around the etcd client that provides
 // simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
-	client etcdInterface
+	client etcd.EtcdClient
 }
 
-func NewEtcdLockClient(machines []string) (client *EtcdLockClient, err error) {
-	ec := etcd.NewClient(machines)
+func NewEtcdLockClient(ec etcd.EtcdClient) (client *EtcdLockClient, err error) {
 	client = &EtcdLockClient{ec}
 	err = client.Init()
-
-	return client, err
+	return
 }
 
 // Init sets an initial copy of the semaphore if it doesn't exist yet.
@@ -46,8 +36,8 @@ func (c *EtcdLockClient) Init() (err error) {
 
 	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
 	if err != nil {
-		eerr, ok := err.(*etcd.EtcdError)
-		if ok && eerr.ErrorCode == etcdError.EcodeNodeExist {
+		eerr, ok := err.(*etcd.Error)
+		if ok && eerr.ErrorCode == etcd.ErrorNodeExist {
 			return nil
 		}
 	}

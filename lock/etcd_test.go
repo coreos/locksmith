@@ -5,24 +5,24 @@ import (
 	"reflect"
 	"testing"
 
-	etcdError "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/error"
-	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
+	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
+	"github.com/coreos/locksmith/etcd"
 )
 
 type testEtcdClient struct {
 	err  error
-	resp *etcd.Response
+	resp *goetcd.Response
 }
 
-func (t *testEtcdClient) Create(key string, value string, ttl uint64) (*etcd.Response, error) {
+func (t *testEtcdClient) Create(key string, value string, ttl uint64) (*goetcd.Response, error) {
 	return t.resp, t.err
 }
 
-func (t *testEtcdClient) CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*etcd.Response, error) {
+func (t *testEtcdClient) CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*goetcd.Response, error) {
 	return t.resp, t.err
 }
 
-func (t *testEtcdClient) Get(key string, sort, recursive bool) (*etcd.Response, error) {
+func (t *testEtcdClient) Get(key string, sort, recursive bool) (*goetcd.Response, error) {
 	return t.resp, t.err
 }
 
@@ -32,8 +32,8 @@ func TestEtcdLockClientInit(t *testing.T) {
 		want bool
 	}{
 		{nil, false},
-		{&etcd.EtcdError{ErrorCode: etcdError.EcodeNodeExist}, false},
-		{&etcd.EtcdError{ErrorCode: etcdError.EcodeKeyNotFound}, true},
+		{&etcd.Error{ErrorCode: etcd.ErrorNodeExist}, false},
+		{&etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, true},
 		{errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{
@@ -46,9 +46,9 @@ func TestEtcdLockClientInit(t *testing.T) {
 	}
 }
 
-func makeResponse(idx int, val string) *etcd.Response {
-	return &etcd.Response{
-		Node: &etcd.Node{
+func makeResponse(idx int, val string) *goetcd.Response {
+	return &goetcd.Response{
+		Node: &goetcd.Node{
 			Value:         val,
 			ModifiedIndex: uint64(idx),
 		},
@@ -58,13 +58,13 @@ func makeResponse(idx int, val string) *etcd.Response {
 func TestEtcdLockClientGet(t *testing.T) {
 	for i, tt := range []struct {
 		ee error
-		er *etcd.Response
+		er *goetcd.Response
 		ws *Semaphore
 		we bool
 	}{
 		// errors returned from etcd
 		{errors.New("some error"), nil, nil, true},
-		{&etcd.EtcdError{ErrorCode: etcdError.EcodeKeyNotFound}, nil, nil, true},
+		{&etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, nil, nil, true},
 		// bad JSON should cause errors
 		{nil, makeResponse(0, "asdf"), nil, true},
 		{nil, makeResponse(0, `{"semaphore:`), nil, true},
@@ -108,8 +108,8 @@ func TestEtcdLockClientSet(t *testing.T) {
 		{&Semaphore{}, nil, false},
 		{&Semaphore{Index: uint64(1234)}, nil, false},
 		// all errors returned from etcd should propagate
-		{&Semaphore{}, &etcd.EtcdError{ErrorCode: etcdError.EcodeNodeExist}, true},
-		{&Semaphore{}, &etcd.EtcdError{ErrorCode: etcdError.EcodeKeyNotFound}, true},
+		{&Semaphore{}, &etcd.Error{ErrorCode: etcd.ErrorNodeExist}, true},
+		{&Semaphore{}, &etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, true},
 		{&Semaphore{}, errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{

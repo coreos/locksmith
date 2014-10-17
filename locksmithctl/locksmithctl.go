@@ -6,6 +6,9 @@ import (
 	"os"
 	"path"
 	"text/tabwriter"
+
+	"github.com/coreos/locksmith/etcd"
+	"github.com/coreos/locksmith/lock"
 )
 
 const (
@@ -20,8 +23,11 @@ var (
 	globalFlagset *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
-		Debug    bool
-		Endpoint string
+		Debug        bool
+		Endpoint     string
+		EtcdKeyFile  string
+		EtcdCertFile string
+		EtcdCAFile   string
 	}{}
 )
 
@@ -31,6 +37,9 @@ func init() {
 
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
 	globalFlagset.StringVar(&globalFlags.Endpoint, "endpoint", "http://127.0.0.1:4001", "etcd endpoint for locksmith. Defaults to the local instance.")
+	globalFlagset.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
+	globalFlagset.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
+	globalFlagset.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
 
 	commands = []*Command{
 		cmdHelp,
@@ -99,4 +108,26 @@ func main() {
 	}
 
 	os.Exit(cmd.Run(cmd.Flags.Args()))
+}
+
+// getLockClient returns an initialized EtcdLockClient, using an etcd
+// client configured from the global etcd flags
+func getClient() (*lock.EtcdLockClient, error) {
+	var ti *etcd.TLSInfo
+	if globalFlags.EtcdCAFile != "" || globalFlags.EtcdCertFile != "" || globalFlags.EtcdKeyFile != "" {
+		ti = &etcd.TLSInfo{
+			CertFile: globalFlags.EtcdCertFile,
+			KeyFile:  globalFlags.EtcdKeyFile,
+			CAFile:   globalFlags.EtcdCAFile,
+		}
+	}
+	ec, err := etcd.NewClient([]string{globalFlags.Endpoint}, ti)
+	if err != nil {
+		return nil, err
+	}
+	lc, err := lock.NewEtcdLockClient(ec)
+	if err != nil {
+		return nil, err
+	}
+	return lc, err
 }
