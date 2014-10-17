@@ -20,7 +20,8 @@ var (
 	globalFlagset *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
-		Debug bool
+		Debug    bool
+		Endpoint string
 	}{}
 )
 
@@ -29,6 +30,7 @@ func init() {
 	out.Init(os.Stdout, 0, 8, 1, '\t', 0)
 
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
+	globalFlagset.StringVar(&globalFlags.Endpoint, "endpoint", "http://127.0.0.1:4001", "etcd endpoint for locksmith. Defaults to the local instance.")
 
 	commands = []*Command{
 		cmdHelp,

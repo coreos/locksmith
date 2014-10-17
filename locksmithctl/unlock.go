@@ -20,7 +20,7 @@ given machine-id. Under normal operation this should not be necessary.`,
 )
 
 func runUnlock(args []string) (exit int) {
-	elc, err := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient([]string{globalFlags.Endpoint})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
 		return 1

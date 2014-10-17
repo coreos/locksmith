@@ -13,7 +13,7 @@ var (
 	cmdReboot = &Command{
 		Name:        "reboot",
 		Summary:     "Reboot honoring reboot locks.",
-		Description: `Reboot will attempt to reboot immediatly after taking a reboot lock. The user is responsible for unlocking after a successful reboot.`,
+		Description: `Reboot will attempt to reboot immediately after taking a reboot lock. The user is responsible for unlocking after a successful reboot.`,
 		Run:         runReboot,
 	}
 )
@@ -24,10 +24,15 @@ func runReboot(args []string) int {
 		return 1
 	}
 
-	elc, _ := lock.NewEtcdLockClient(nil)
+	elc, err := lock.NewEtcdLockClient([]string{globalFlags.Endpoint})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Error initializing etcd client:", err)
+		return 1
+	}
+
 	lgn, err := login1.New()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot read machine-id")
+		fmt.Fprintln(os.Stderr, "Error initializing login connection:", err)
 		return 1
 	}
 
