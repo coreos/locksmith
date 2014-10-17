@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	// TODO(jonboulle): this is a leaky abstraction, but we don't want to reimplement all go-etcd types in locksmith/etcd. This should go away once go-etcd is replaced.
 	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
 	"github.com/coreos/locksmith/etcd"
 )
@@ -32,8 +33,8 @@ func TestEtcdLockClientInit(t *testing.T) {
 		want bool
 	}{
 		{nil, false},
-		{&etcd.Error{ErrorCode: etcd.ErrorNodeExist}, false},
-		{&etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, true},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, false},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true},
 		{errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{
@@ -64,7 +65,7 @@ func TestEtcdLockClientGet(t *testing.T) {
 	}{
 		// errors returned from etcd
 		{errors.New("some error"), nil, nil, true},
-		{&etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, nil, nil, true},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, nil, nil, true},
 		// bad JSON should cause errors
 		{nil, makeResponse(0, "asdf"), nil, true},
 		{nil, makeResponse(0, `{"semaphore:`), nil, true},
@@ -108,8 +109,8 @@ func TestEtcdLockClientSet(t *testing.T) {
 		{&Semaphore{}, nil, false},
 		{&Semaphore{Index: uint64(1234)}, nil, false},
 		// all errors returned from etcd should propagate
-		{&Semaphore{}, &etcd.Error{ErrorCode: etcd.ErrorNodeExist}, true},
-		{&Semaphore{}, &etcd.Error{ErrorCode: etcd.ErrorKeyNotFound}, true},
+		{&Semaphore{}, &goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, true},
+		{&Semaphore{}, &goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true},
 		{&Semaphore{}, errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{

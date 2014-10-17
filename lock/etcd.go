@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 
+	// TODO(jonboulle): this is a leaky abstraction, but we don't want to reimplement all go-etcd types in locksmith/etcd. This should go away once go-etcd is replaced.
+	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
 	"github.com/coreos/locksmith/etcd"
 )
 
@@ -36,7 +38,7 @@ func (c *EtcdLockClient) Init() (err error) {
 
 	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
 	if err != nil {
-		eerr, ok := err.(*etcd.Error)
+		eerr, ok := err.(*goetcd.EtcdError)
 		if ok && eerr.ErrorCode == etcd.ErrorNodeExist {
 			return nil
 		}
