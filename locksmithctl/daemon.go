@@ -37,15 +37,6 @@ import (
 	"github.com/coreos/locksmith/updateengine"
 )
 
-var (
-	cmdDaemon = &Command{
-		Name:        "daemon",
-		Summary:     "Daemon for reboot needed signal and if reboot able.",
-		Description: `Daemon waits for the reboot needed signal coming out of update engine and attempts to acquire the reboot lock. If the reboot lock is acquired then the machine will reboot.`,
-		Run:         runDaemon,
-	}
-)
-
 const (
 	initialInterval   = time.Second * 5
 	maxInterval       = time.Minute * 5
@@ -279,7 +270,10 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 	}
 }
 
-func runDaemon(args []string) int {
+// runDaemon waits for the reboot needed signal coming out of update engine and
+// attempts to acquire the reboot lock. If the reboot lock is acquired then the
+// machine will reboot.
+func runDaemon() int {
 	shutdown := make(chan os.Signal, 1)
 	stop := make(chan struct{}, 1)
 	go func() {

@@ -26,6 +26,7 @@ import (
 
 	"github.com/coreos/locksmith/etcd"
 	"github.com/coreos/locksmith/lock"
+	"github.com/coreos/locksmith/version"
 )
 
 const (
@@ -45,6 +46,7 @@ var (
 		EtcdKeyFile  string
 		EtcdCertFile string
 		EtcdCAFile   string
+		Version      bool
 	}{}
 )
 
@@ -57,6 +59,7 @@ func init() {
 	globalFlagset.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
 	globalFlagset.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
 	globalFlagset.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
+	globalFlagset.BoolVar(&globalFlags.Version, "version", false, "Print the version and exit.")
 
 	commands = []*Command{
 		cmdHelp,
@@ -94,15 +97,21 @@ func main() {
 	globalFlagset.Parse(os.Args[1:])
 	var args = globalFlagset.Args()
 
+	progName := path.Base(os.Args[0])
+
+	if globalFlags.Version {
+		fmt.Printf("%s version %s\n", progName, version.Version)
+		os.Exit(0)
+	}
+
+	if progName == "locksmithd" {
+		flagsFromEnv("LOCKSMITHD", globalFlagset)
+		os.Exit(runDaemon())
+	}
+
 	// no command specified - trigger help
 	if len(args) < 1 {
 		args = append(args, "help")
-	}
-
-	progName := os.Args[0]
-	if path.Base(progName) == "locksmithd" {
-		flagsFromEnv("LOCKSMITHD", globalFlagset)
-		os.Exit(runDaemon([]string{}))
 	}
 
 	flagsFromEnv("LOCKSMITHCTL", globalFlagset)
