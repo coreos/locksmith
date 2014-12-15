@@ -30,8 +30,9 @@ import (
 )
 
 const (
-	cliName        = "locksmithctl"
-	cliDescription = `Manage the cluster wide reboot lock.`
+	cliName         = "locksmithctl"
+	cliDescription  = `Manage the cluster wide reboot lock.`
+	defaultEndpoint = "http://127.0.0.1:4001"
 )
 
 var (
@@ -42,7 +43,7 @@ var (
 
 	globalFlags = struct {
 		Debug        bool
-		Endpoint     string
+		Endpoints    endpoints
 		EtcdKeyFile  string
 		EtcdCertFile string
 		EtcdCAFile   string
@@ -50,12 +51,30 @@ var (
 	}{}
 )
 
+type endpoints []string
+
+func (e *endpoints) String() string {
+	if len(*e) == 0 {
+		return defaultEndpoint
+	}
+
+	return strings.Join(*e, ",")
+}
+
+func (e *endpoints) Set(value string) error {
+	for _, url := range strings.Split(value, ",") {
+		*e = append(*e, strings.TrimSpace(url))
+	}
+
+	return nil
+}
+
 func init() {
 	out = new(tabwriter.Writer)
 	out.Init(os.Stdout, 0, 8, 1, '\t', 0)
 
 	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
-	globalFlagset.StringVar(&globalFlags.Endpoint, "endpoint", "http://127.0.0.1:4001", "etcd endpoint for locksmith. Defaults to the local instance.")
+	globalFlagset.Var(&globalFlags.Endpoints, "endpoint", "etcd endpoint for locksmith. Specify multiple times to use multiple endpoints.")
 	globalFlagset.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
 	globalFlagset.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
 	globalFlagset.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
@@ -96,6 +115,10 @@ func getFlags(flagset *flag.FlagSet) (flags []*flag.Flag) {
 func main() {
 	globalFlagset.Parse(os.Args[1:])
 	var args = globalFlagset.Args()
+
+	if len(globalFlags.Endpoints) == 0 {
+		globalFlags.Endpoints = []string{defaultEndpoint}
+	}
 
 	progName := path.Base(os.Args[0])
 
@@ -150,7 +173,7 @@ func getClient() (*lock.EtcdLockClient, error) {
 			CAFile:   globalFlags.EtcdCAFile,
 		}
 	}
-	ec, err := etcd.NewClient([]string{globalFlags.Endpoint}, ti)
+	ec, err := etcd.NewClient(globalFlags.Endpoints, ti)
 	if err != nil {
 		return nil, err
 	}
