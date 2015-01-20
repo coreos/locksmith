@@ -30,19 +30,20 @@ import (
 )
 
 const (
-	cliName        = "locksmithctl"
-	cliDescription = `Manage the cluster wide reboot lock.`
+	cliName         = "locksmithctl"
+	cliDescription  = `Manage the cluster wide reboot lock.`
+	defaultEndpoint = "http://127.0.0.1:4001"
 )
 
 var (
 	out *tabwriter.Writer
 
 	commands      []*Command
-	globalFlagset *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
+	globalFlagSet *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
 		Debug        bool
-		Endpoint     string
+		Endpoints    endpoints
 		EtcdKeyFile  string
 		EtcdCertFile string
 		EtcdCAFile   string
@@ -50,16 +51,34 @@ var (
 	}{}
 )
 
+type endpoints []string
+
+func (e *endpoints) String() string {
+	if len(*e) == 0 {
+		return defaultEndpoint
+	}
+
+	return strings.Join(*e, ",")
+}
+
+func (e *endpoints) Set(value string) error {
+	for _, url := range strings.Split(value, ",") {
+		*e = append(*e, strings.TrimSpace(url))
+	}
+
+	return nil
+}
+
 func init() {
 	out = new(tabwriter.Writer)
 	out.Init(os.Stdout, 0, 8, 1, '\t', 0)
 
-	globalFlagset.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
-	globalFlagset.StringVar(&globalFlags.Endpoint, "endpoint", "http://127.0.0.1:4001", "etcd endpoint for locksmith. Defaults to the local instance.")
-	globalFlagset.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
-	globalFlagset.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
-	globalFlagset.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
-	globalFlagset.BoolVar(&globalFlags.Version, "version", false, "Print the version and exit.")
+	globalFlagSet.BoolVar(&globalFlags.Debug, "debug", false, "Print out debug information to stderr.")
+	globalFlagSet.Var(&globalFlags.Endpoints, "endpoint", "etcd endpoint for locksmith. Specify multiple times to use multiple endpoints.")
+	globalFlagSet.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
+	globalFlagSet.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
+	globalFlagSet.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
+	globalFlagSet.BoolVar(&globalFlags.Version, "version", false, "Print the version and exit.")
 
 	commands = []*Command{
 		cmdHelp,
@@ -82,20 +101,24 @@ type Command struct {
 }
 
 func getAllFlags() (flags []*flag.Flag) {
-	return getFlags(globalFlagset)
+	return getFlags(globalFlagSet)
 }
 
-func getFlags(flagset *flag.FlagSet) (flags []*flag.Flag) {
+func getFlags(flagSet *flag.FlagSet) (flags []*flag.Flag) {
 	flags = make([]*flag.Flag, 0)
-	flagset.VisitAll(func(f *flag.Flag) {
+	flagSet.VisitAll(func(f *flag.Flag) {
 		flags = append(flags, f)
 	})
 	return
 }
 
 func main() {
-	globalFlagset.Parse(os.Args[1:])
-	var args = globalFlagset.Args()
+	globalFlagSet.Parse(os.Args[1:])
+	var args = globalFlagSet.Args()
+
+	if len(globalFlags.Endpoints) == 0 {
+		globalFlags.Endpoints = []string{defaultEndpoint}
+	}
 
 	progName := path.Base(os.Args[0])
 
@@ -105,7 +128,7 @@ func main() {
 	}
 
 	if progName == "locksmithd" {
-		flagsFromEnv("LOCKSMITHD", globalFlagset)
+		flagsFromEnv("LOCKSMITHD", globalFlagSet)
 		os.Exit(runDaemon())
 	}
 
@@ -114,7 +137,7 @@ func main() {
 		args = append(args, "help")
 	}
 
-	flagsFromEnv("LOCKSMITHCTL", globalFlagset)
+	flagsFromEnv("LOCKSMITHCTL", globalFlagSet)
 
 	var cmd *Command
 
@@ -150,7 +173,7 @@ func getClient() (*lock.EtcdLockClient, error) {
 			CAFile:   globalFlags.EtcdCAFile,
 		}
 	}
-	ec, err := etcd.NewClient([]string{globalFlags.Endpoint}, ti)
+	ec, err := etcd.NewClient(globalFlags.Endpoints, ti)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +184,7 @@ func getClient() (*lock.EtcdLockClient, error) {
 	return lc, err
 }
 
-// flagsFromEnv parses all registered flags in the given flagset,
+// flagsFromEnv parses all registered flags in the given flagSet,
 // and if they are not already set it attempts to set their values from
 // environment variables. Environment variables take the name of the flag but
 // are UPPERCASE, have the given prefix, and any dashes are replaced by
