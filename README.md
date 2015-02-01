@@ -29,6 +29,24 @@ The default strategy is `best-effort`.
 `locksmithctl` is a simple client that can be use to introspect and control the
 lock used by locksmith.  It is installed by default on CoreOS.
 
+Run `locksmithctl -help` for a list of command-line options.
+
+All command-line options can also be specified using environment variables with
+a `LOCKSMITHCTL_` prefix. For example, the `-endpoint` argument can be set
+using `LOCKSMITHCTL_ENDPOINT`.
+
+### Connecting to multiple endpoints
+
+Multiple endpoints can be specified by passing the `-endpoint=<url>` option for
+each endpoint, or by passing a comma-separated list of endpoints, e.g.:
+
+    -endpoint=<url>,<url>
+
+Specifying multiple endpoints using an environment variable is supported by
+passing a comma-delimited list, e.g.:
+
+    LOCKSMITHCTL_ENDPOINT=<url>,<url>
+
 ### Listing the Holders
 
 ```
