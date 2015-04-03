@@ -28,9 +28,8 @@ import (
 )
 
 const (
-	cliName         = "locksmithctl"
-	cliDescription  = `Manage the cluster wide reboot lock.`
-	defaultEndpoint = "http://127.0.0.1:4001"
+	cliName        = "locksmithctl"
+	cliDescription = `Manage the cluster wide reboot lock.`
 )
 
 var (
@@ -47,13 +46,18 @@ var (
 		EtcdCAFile   string
 		Version      bool
 	}{}
+
+	defaultEndpoints = []string{
+		"http://127.0.0.1:2379",
+		"http://127.0.0.1:4001",
+	}
 )
 
 type endpoints []string
 
 func (e *endpoints) String() string {
 	if len(*e) == 0 {
-		return defaultEndpoint
+		return strings.Join(defaultEndpoints, ",")
 	}
 
 	return strings.Join(*e, ",")
@@ -115,7 +119,7 @@ func main() {
 	var args = globalFlagSet.Args()
 
 	if len(globalFlags.Endpoints) == 0 {
-		globalFlags.Endpoints = []string{defaultEndpoint}
+		globalFlags.Endpoints = defaultEndpoints
 	}
 
 	progName := path.Base(os.Args[0])
