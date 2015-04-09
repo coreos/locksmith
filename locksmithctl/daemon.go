@@ -41,6 +41,13 @@ const (
 	loginsRebootDelay = time.Minute * 5
 )
 
+var (
+	etcdServices = []string{
+		"etcd.service",
+		"etcd2.service",
+	}
+)
+
 const (
 	StrategyReboot     = "reboot"
 	StrategyEtcdLock   = "etcd-lock"
@@ -139,23 +146,33 @@ func setupLock() (lck *lock.Lock, err error) {
 }
 
 // etcdActive returns true if etcd is not in an inactive state according to systemd.
-func etcdActive() (running bool, err error) {
+func etcdActive() (active bool, name string, err error) {
+	active = false
+	name = ""
+
 	sys, err := dbus.New()
 	if err != nil {
-		return false, err
+		return
 	}
 	defer sys.Close()
 
-	prop, err := sys.GetUnitProperty("etcd.service", "ActiveState")
-	if err != nil {
-		return false, fmt.Errorf("Error getting etcd.service ActiveState: %v", err)
+	for _, service := range etcdServices {
+		prop, err := sys.GetUnitProperty(service, "ActiveState")
+		if err != nil {
+			continue
+		}
+
+		switch prop.Value.Value().(string) {
+		case "inactive":
+			continue
+		default:
+			active = true
+			name = service
+			break
+		}
 	}
 
-	if prop.Value.Value().(string) == "inactive" {
-		return false, nil
-	}
-
-	return true, nil
+	return
 }
 
 type rebooter struct {
@@ -166,15 +183,15 @@ type rebooter struct {
 func (r rebooter) useLock() (useLock bool, err error) {
 	switch r.strategy {
 	case StrategyBestEffort:
-		running, err := etcdActive()
+		active, name, err := etcdActive()
 		if err != nil {
 			return false, err
 		}
-		if running {
-			fmt.Println("etcd.service is active")
+		if active {
+			fmt.Printf("%s is active\n", name)
 			useLock = true
 		} else {
-			fmt.Println("etcd.service is inactive")
+			fmt.Printf("%v are inactive\n", etcdServices)
 			useLock = false
 		}
 	case StrategyEtcdLock:
@@ -240,13 +257,13 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 		case <-stop:
 			return
 		case <-time.After(interval):
-			active, err := etcdActive()
+			active, _, err := etcdActive()
 			if err != nil {
-				reason = "error checking on etcd.service"
+				reason = fmt.Sprintf("error checking status of %v", etcdServices)
 				break
 			}
 			if !active {
-				reason = "etcd.service is inactive"
+				reason = fmt.Sprintf("%v are inactive", etcdServices)
 				break
 			}
 
