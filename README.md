@@ -80,6 +80,31 @@ Old: 1
 New: 4
 ```
 
+## Groups
+
+`locksmithd` coordinates the reboot lock in groups of machines. The default
+group is "", or the empty string. `locksmithd` will only coordinate the reboot
+lock with other machines in the same group.
+
+The purpose of groups is to allow faster updating of certain sets of machines
+while maintaining availability of certain services. For example, in a cluster
+of 5 CoreOS machines with all machines in the default group, if you have 2 load
+balancers and run `locksmithctl set-max 2`, then it is possible that both load
+balancers would be rebooted at the same time, interrupting the service they
+provide. However, if the load balancers are put into their own group named "lb",
+and both the default group and the "lb" group have a max holder of 1, two
+reboots can occur at once, but both load balancers will never reboot at the same
+time.
+
+### Configuring groups
+
+To place machines in a group other than the default, `locksmithd` must be started
+with the `-group=groupname` flag or set the `LOCKSMITHD_GROUP=groupname` environment
+variable.
+
+To control the semaphore of a group other than the default, you must invoke
+`locksmithctl` with the `-group=groupname` flag or set the `LOCKSMITHCTL_GROUP=groupname`
+environment variable.
 
 ## Implementation details 
 
@@ -87,8 +112,10 @@ The following section describes how locksmith works under the hood.
 
 ### Semaphore
 
-locksmith uses a [semaphore][semaphore] in etcd (located at the key
-`coreos.com/updateengine/rebootlock/semaphore`) to coordinate the reboot lock.
+locksmith uses a [semaphore][semaphore] in etcd, located at the key
+`coreos.com/updateengine/rebootlock/semaphore`, to coordinate the reboot lock.
+If a non-default group name is used, the etcd key will be
+`coreos.com/updateengine/rebootlock/groups/$groupname/semaphore`.
 
 The semaphore is a JSON document, describing a simple semaphore, that clients [swap][cas]
 to take the lock. 
