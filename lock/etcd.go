@@ -17,6 +17,8 @@ package lock
 import (
 	"encoding/json"
 	"errors"
+	"net/url"
+	"path"
 
 	// TODO(jonboulle): this is a leaky abstraction, but we don't want to reimplement all go-etcd types in locksmith/etcd. This should go away once go-etcd is replaced.
 	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
@@ -25,19 +27,29 @@ import (
 
 const (
 	keyPrefix       = "coreos.com/updateengine/rebootlock"
-	holdersPrefix   = keyPrefix + "/holders"
-	SemaphorePrefix = keyPrefix + "/semaphore"
+	groupBranch     = "groups"
+	semaphoreBranch = "semaphore"
+	SemaphorePrefix = keyPrefix + "/" + semaphoreBranch
 )
 
 // EtcdLockClient is a wrapper around the etcd client that provides
 // simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
-	client etcd.EtcdClient
+	client  etcd.EtcdClient
+	keypath string
 }
 
-func NewEtcdLockClient(ec etcd.EtcdClient) (client *EtcdLockClient, err error) {
-	client = &EtcdLockClient{ec}
+// NewEtcdLockClient creates a new EtcdLockClient. The group parameter defines
+// the etcd key path in which the client will manipulate the semaphore. If the
+// group is the empty string, the default semaphore will be used.
+func NewEtcdLockClient(ec etcd.EtcdClient, group string) (client *EtcdLockClient, err error) {
+	key := SemaphorePrefix
+	if group != "" {
+		key = path.Join(keyPrefix, groupBranch, url.QueryEscape(group), semaphoreBranch)
+	}
+
+	client = &EtcdLockClient{ec, key}
 	err = client.Init()
 	return
 }
@@ -50,7 +62,7 @@ func (c *EtcdLockClient) Init() (err error) {
 		return err
 	}
 
-	_, err = c.client.Create(SemaphorePrefix, string(b), 0)
+	_, err = c.client.Create(c.keypath, string(b), 0)
 	if err != nil {
 		eerr, ok := err.(*goetcd.EtcdError)
 		if ok && eerr.ErrorCode == etcd.ErrorNodeExist {
@@ -63,7 +75,7 @@ func (c *EtcdLockClient) Init() (err error) {
 
 // Get fetches the Semaphore from etcd.
 func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
-	resp, err := c.client.Get(SemaphorePrefix, false, false)
+	resp, err := c.client.Get(c.keypath, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +101,7 @@ func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
 		return err
 	}
 
-	_, err = c.client.CompareAndSwap(SemaphorePrefix, string(b), 0, "", sem.Index)
+	_, err = c.client.CompareAndSwap(c.keypath, string(b), 0, "", sem.Index)
 
 	return err
 }

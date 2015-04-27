@@ -43,20 +43,24 @@ func (t *testEtcdClient) Get(key string, sort, recursive bool) (*goetcd.Response
 
 func TestEtcdLockClientInit(t *testing.T) {
 	for i, tt := range []struct {
-		ee   error
-		want bool
+		ee      error
+		want    bool
+		group   string
+		keypath string
 	}{
-		{nil, false},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, false},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true},
-		{errors.New("some random error"), true},
+		{nil, false, "", SemaphorePrefix},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, false, "", SemaphorePrefix},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true, "", SemaphorePrefix},
+		{errors.New("some random error"), true, "", SemaphorePrefix},
+		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true, "database", "coreos.com/updateengine/rebootlock/groups/database/semaphore"},
+		{nil, false, "prod/database", "coreos.com/updateengine/rebootlock/groups/prod%2Fdatabase/semaphore"},
 	} {
-		elc := &EtcdLockClient{
-			client: &testEtcdClient{err: tt.ee},
-		}
-		got := elc.Init()
+		elc, got := NewEtcdLockClient(&testEtcdClient{err: tt.ee}, tt.group)
 		if (got != nil) != tt.want {
 			t.Errorf("case %d: unexpected error state initializing Client: got %v", i, got)
+		}
+		if elc.keypath != tt.keypath {
+			t.Errorf("case %d: unexpected etcd key path: got %v want %v", i, elc.keypath, tt.keypath)
 		}
 	}
 }

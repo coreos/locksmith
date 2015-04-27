@@ -44,6 +44,7 @@ var (
 		EtcdKeyFile  string
 		EtcdCertFile string
 		EtcdCAFile   string
+		Group        string
 		Version      bool
 	}{}
 
@@ -80,6 +81,7 @@ func init() {
 	globalFlagSet.StringVar(&globalFlags.EtcdKeyFile, "etcd-keyfile", "", "etcd key file authentication")
 	globalFlagSet.StringVar(&globalFlags.EtcdCertFile, "etcd-certfile", "", "etcd cert file authentication")
 	globalFlagSet.StringVar(&globalFlags.EtcdCAFile, "etcd-cafile", "", "etcd CA file authentication")
+	globalFlagSet.StringVar(&globalFlags.Group, "group", "", "locksmith group")
 	globalFlagSet.BoolVar(&globalFlags.Version, "version", false, "Print the version and exit.")
 
 	commands = []*Command{
@@ -179,7 +181,7 @@ func getClient() (*lock.EtcdLockClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	lc, err := lock.NewEtcdLockClient(ec)
+	lc, err := lock.NewEtcdLockClient(ec, globalFlags.Group)
 	if err != nil {
 		return nil, err
 	}
