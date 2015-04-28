@@ -13,6 +13,7 @@ engine has successfully applied an update:
 - `etcd-lock` - reboot after first taking a lock in etcd.
 - `reboot` - reboot immediately without taking a lock.
 - `best-effort` - if etcd is running, then do `etcd-lock`; otherwise, `reboot`.
+- `off` - causes locksmithd to exit and do nothing.
 
 These strategies can be configured via `/etc/coreos/update.conf` with a line that looks like:
 

@@ -52,6 +52,7 @@ const (
 	StrategyReboot     = "reboot"
 	StrategyEtcdLock   = "etcd-lock"
 	StrategyBestEffort = "best-effort"
+	StrategyOff        = "off"
 )
 
 // attempt to broadcast msg to all lines registered in utmp
@@ -289,19 +290,26 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 // attempts to acquire the reboot lock. If the reboot lock is acquired then the
 // machine will reboot.
 func runDaemon() int {
+	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
+
+	if strategy == "" {
+		strategy = StrategyBestEffort
+	}
+
+	if strategy == StrategyOff {
+		fmt.Fprintf(os.Stderr, "Reboot strategy is %q - shutting down.", strategy)
+		return 0
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	stop := make(chan struct{}, 1)
+
 	go func() {
 		<-shutdown
 		fmt.Fprintln(os.Stderr, "Received interrupt/termination signal - shutting down.")
 		os.Exit(0)
 	}()
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
-	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
-	if strategy == "" {
-		strategy = StrategyBestEffort
-	}
 
 	ue, err := updateengine.New()
 	if err != nil {
