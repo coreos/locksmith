@@ -32,6 +32,7 @@ import (
 
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/pkg/machineid"
+	"github.com/coreos/locksmith/pkg/timeutil"
 	"github.com/coreos/locksmith/updateengine"
 )
 
@@ -290,15 +291,34 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 // attempts to acquire the reboot lock. If the reboot lock is acquired then the
 // machine will reboot.
 func runDaemon() int {
-	strategy := os.ExpandEnv("${REBOOT_STRATEGY}")
+	var period *timeutil.Periodic
+
+	strategy := os.Getenv("REBOOT_STRATEGY")
 
 	if strategy == "" {
 		strategy = StrategyBestEffort
 	}
 
 	if strategy == StrategyOff {
-		fmt.Fprintf(os.Stderr, "Reboot strategy is %q - shutting down.", strategy)
+		fmt.Fprintf(os.Stderr, "Reboot strategy is %q - shutting down.\n", strategy)
 		return 0
+	}
+
+	startw := os.Getenv("REBOOT_WINDOW_START")
+	lengthw := os.Getenv("REBOOT_WINDOW_LENGTH")
+	if (startw == "") != (lengthw == "") {
+		fmt.Fprintln(os.Stderr, "either both or neither $REBOOT_WINDOW_START and $REBOOT_WINDOW_LENGTH must be set")
+		return 1
+	}
+
+	if startw != "" && lengthw != "" {
+		p, err := timeutil.ParsePeriodic(startw, lengthw)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error parsing reboot window: %s\n", err)
+			return 1
+		}
+
+		period = p
 	}
 
 	shutdown := make(chan os.Signal, 1)
@@ -351,6 +371,15 @@ func runDaemon() int {
 
 	close(stop)
 	wg.Wait()
+
+	if period != nil {
+		now := time.Now()
+		sleeptime := period.DurationToStart(now)
+		if sleeptime > 0 {
+			fmt.Printf("Waiting for %s to reboot.\n", sleeptime)
+			time.Sleep(sleeptime)
+		}
+	}
 
 	return r.reboot()
 }

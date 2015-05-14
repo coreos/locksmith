@@ -107,6 +107,36 @@ To control the semaphore of a group other than the default, you must invoke
 `locksmithctl` with the `-group=groupname` flag or set the `LOCKSMITHCTL_GROUP=groupname`
 environment variable.
 
+## Reboot windows
+
+`locksmithd` can be configured to only reboot during certain timeframes. The
+reboot window is configured through two environment variables,
+`REBOOT_WINDOW_START` and `REBOOT_WINDOW_LENGTH`. Here is an example configuration:
+
+```
+REBOOT_WINDOW_START=14:00
+REBOOT_WINDOW_LENGTH=1h
+```
+
+This would configure `locksmithd` to only reboot between 2pm and 3pm. Optionally,
+a day of week may be specified for the start of the window:
+
+```
+REBOOT_WINDOW_START=Thu 23:00
+REBOOT_WINDOW_LENGTH=1h30m
+```
+
+This would configure `locksmithd` to only reboot the system on Thursday after 11pm,
+or on Friday before 12:30am.
+
+Currently, the only supported values for the day of week are short day names,
+e.g. `Sun`, `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, and `Sat`, but the day of week can
+be upper or lower case. The time of day must be specified in 24-hour time format.
+The window length is expressed as input to go's [time.ParseDurataion][time.ParseDuration]
+function.
+
+[time.ParseDuration]: http://godoc.org/time#ParseDuration
+
 ## Implementation details 
 
 The following section describes how locksmith works under the hood.
