@@ -46,11 +46,18 @@ func ParsePeriodic(start, duration string) (*Periodic, error) {
 	if pc.start, err = parseStart(start); err != nil {
 		return nil, fmt.Errorf("unable to parse start: %v", err)
 	}
+
 	if pc.duration, err = time.ParseDuration(duration); err != nil {
 		return nil, fmt.Errorf("unable to parse duration: %v", err)
 	}
+
 	if pc.duration < time.Duration(0) {
 		return nil, fmt.Errorf("duration cannot be negative")
+	}
+
+	// check that the duration of the window does not exceed the period.
+	if (pc.start.dayOfWeek == -1 && pc.duration >= 24*time.Hour) || pc.duration >= 7*24*time.Hour {
+		return nil, fmt.Errorf("duration cannot exceed period")
 	}
 
 	return pc, nil
