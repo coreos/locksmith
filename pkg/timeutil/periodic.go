@@ -127,7 +127,7 @@ func (pc *Periodic) DurationToStart(ref time.Time) time.Duration {
 	return pc.Next(ref).Start.Sub(ref)
 }
 
-func (pc *Periodic) mkdate(ref time.Time, daydiff int) time.Time {
+func (pc *Periodic) shiftTimeByDays(ref time.Time, daydiff int) time.Time {
 	rt := time.Date(ref.Year(),
 		ref.Month(),
 		ref.Day()+daydiff,
@@ -145,18 +145,18 @@ func (pc *Periodic) Previous(ref time.Time) (p *Period) {
 	if pc.start.dayOfWeek != -1 { // Weekly
 		if pc.cmpDayOfWeek(ref) >= 0 {
 			// this week
-			p.Start = pc.mkdate(ref, -(int(ref.Weekday()) - pc.start.dayOfWeek))
+			p.Start = pc.shiftTimeByDays(ref, -(int(ref.Weekday()) - pc.start.dayOfWeek))
 		} else {
 			// last week
-			p.Start = pc.mkdate(ref, -(int(ref.Weekday()) + (7 - pc.start.dayOfWeek)))
+			p.Start = pc.shiftTimeByDays(ref, -(int(ref.Weekday()) + (7 - pc.start.dayOfWeek)))
 		}
 	} else if pc.start.hourOfDay != -1 { // Daily
 		if pc.cmpHourOfDay(ref) >= 0 {
 			// today
-			p.Start = pc.mkdate(ref, 0)
+			p.Start = pc.shiftTimeByDays(ref, 0)
 		} else {
 			// yesterday
-			p.Start = pc.mkdate(ref, -1)
+			p.Start = pc.shiftTimeByDays(ref, -1)
 		}
 	} // XXX(mischief): other intervals unsupported atm.
 
@@ -170,18 +170,18 @@ func (pc *Periodic) Next(ref time.Time) (p *Period) {
 	if pc.start.dayOfWeek != -1 { // Weekly
 		if pc.cmpDayOfWeek(ref) < 0 {
 			// This week
-			p.Start = pc.mkdate(ref, pc.start.dayOfWeek-int(ref.Weekday()))
+			p.Start = pc.shiftTimeByDays(ref, pc.start.dayOfWeek-int(ref.Weekday()))
 		} else {
 			// Next week
-			p.Start = pc.mkdate(ref, (7-int(ref.Weekday()))+pc.start.dayOfWeek)
+			p.Start = pc.shiftTimeByDays(ref, (7-int(ref.Weekday()))+pc.start.dayOfWeek)
 		}
 	} else if pc.start.hourOfDay != -1 { // Daily
 		if pc.cmpHourOfDay(ref) < 0 {
 			// Today
-			p.Start = pc.mkdate(ref, 0)
+			p.Start = pc.shiftTimeByDays(ref, 0)
 		} else {
 			// Tomorrow
-			p.Start = pc.mkdate(ref, 1)
+			p.Start = pc.shiftTimeByDays(ref, 1)
 		}
 	} // XXX(mischief): other intervals unsupported atm.
 
@@ -193,7 +193,7 @@ func (pc *Periodic) Next(ref time.Time) (p *Period) {
 // The return value is less than, equal to, or greater than zero if ref occurs
 // before, equal to, or after the start of Periodic within the same week.
 func (pc *Periodic) cmpDayOfWeek(ref time.Time) time.Duration {
-	pStart := pc.mkdate(ref, -int(ref.Weekday())+pc.start.dayOfWeek)
+	pStart := pc.shiftTimeByDays(ref, -int(ref.Weekday())+pc.start.dayOfWeek)
 	return ref.Sub(pStart)
 }
 
@@ -201,6 +201,6 @@ func (pc *Periodic) cmpDayOfWeek(ref time.Time) time.Duration {
 // The return value is less than, equal to, or greater than zero if ref occurs
 // before, equal to, or after the start of Periodic in the same day.
 func (pc *Periodic) cmpHourOfDay(ref time.Time) time.Duration {
-	pStart := pc.mkdate(ref, 0)
+	pStart := pc.shiftTimeByDays(ref, 0)
 	return ref.Sub(pStart)
 }
