@@ -132,7 +132,7 @@ or on Friday before 12:30am.
 Currently, the only supported values for the day of week are short day names,
 e.g. `Sun`, `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, and `Sat`, but the day of week can
 be upper or lower case. The time of day must be specified in 24-hour time format.
-The window length is expressed as input to go's [time.ParseDurataion][time.ParseDuration]
+The window length is expressed as input to go's [time.ParseDuration][time.ParseDuration]
 function.
 
 [time.ParseDuration]: http://godoc.org/time#ParseDuration
