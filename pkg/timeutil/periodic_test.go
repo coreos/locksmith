@@ -173,6 +173,12 @@ func TestToStart(t *testing.T) {
 			time:     "Sat May 30 23:00:00 PDT 2015",
 			toStart:  34 * time.Hour,
 		},
+		{ // Weekly window where the period started on the last day of the previous month
+			start:    "Sun 23:00",
+			duration: "4h",
+			time:     "Mon Jun 1 01:00:00 PDT 2015",
+			toStart:  -(2 * time.Hour),
+		},
 	}
 
 	for i, tt := range tests {
