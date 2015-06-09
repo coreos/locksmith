@@ -270,7 +270,7 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 
 			lck, err := setupLock()
 			if err != nil {
-				reason = "error setting up lock"
+				reason = "error setting up lock: " + err.Error()
 				break
 			}
 
