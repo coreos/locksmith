@@ -42,7 +42,6 @@ func New() (c *Client, err error) {
 
 	c.conn, err = dbus.SystemBusPrivate()
 	if err != nil {
-		c.conn.Close()
 		return nil, err
 	}
 
