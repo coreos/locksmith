@@ -6,8 +6,10 @@ if [ -z "$PKG" ]; then
 	PKG="./updateengine ./lock ./locksmithctl"
 	GOFMTPATH="$PKG"
 else
-	PKG=${PKG//\//}
-	PKG=${PKG//./}
+	# strip out leading dotslashes and trailing slashes from PKG=./foo/
+	PKG=${PKG/#./}
+	PKG=${PKG/#\//}
+	PKG=${PKG/%\//}
 	GOFMTPATH="$PKG"
 fi
 
