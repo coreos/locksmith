@@ -15,9 +15,12 @@ if ! [ -d "$COVEROUT" ]; then
 	mkdir "$COVEROUT"
 fi
 
-# strip out slashes and dots
-COVERPKG=${PKG//\//}
-COVERPKG=${COVERPKG//./}
+# strip leading dot/slash and trailing slash and sanitize other slashes
+# e.g. ./pkg/timeutil ==> pkg_timeutil 
+COVERPKG=${PKG/#./}
+COVERPKG=${COVERPKG/#\//}
+COVERPKG=${COVERPKG/%\//}
+COVERPKG=${COVERPKG//\//_}
 
 # generate arg for "go test"
 export COVER="-coverprofile ${COVEROUT}/${COVERPKG}.out"
