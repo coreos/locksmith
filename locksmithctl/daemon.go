@@ -182,33 +182,8 @@ type rebooter struct {
 	lgn      *login1.Conn
 }
 
-func (r rebooter) useLock() (useLock bool, err error) {
-	switch r.strategy {
-	case StrategyBestEffort:
-		active, name, err := etcdActive()
-		if err != nil {
-			return false, err
-		}
-		if active {
-			fmt.Printf("%s is active\n", name)
-			useLock = true
-		} else {
-			fmt.Printf("%v are inactive\n", etcdServices)
-			useLock = false
-		}
-	case StrategyEtcdLock:
-		useLock = true
-	case StrategyReboot:
-		useLock = false
-	default:
-		return false, fmt.Errorf("Unknown strategy: %s", r.strategy)
-	}
-
-	return useLock, nil
-}
-
 func (r rebooter) reboot() int {
-	useLock, err := r.useLock()
+	useLock, err := useLock(r.strategy)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
@@ -235,6 +210,37 @@ func (r rebooter) reboot() int {
 	return 1
 }
 
+// useLock returns whether locksmith should attempt to take a lock before
+// rebooting or release a lock afterwards, based on the given strategy.
+// If strategy is set to best effort, this will be dependent on whether the
+// local instance of etcd is active. Otherwise, the lock will always be
+// attempted (in the case of strategy = etcd lock) or never be attempted (in
+// the case of strategy = reboot)
+func useLock(strategy string) (useLock bool, err error) {
+	switch strategy {
+	case StrategyBestEffort:
+		active, name, err := etcdActive()
+		if err != nil {
+			return false, err
+		}
+		if active {
+			fmt.Printf("%s is active\n", name)
+			useLock = true
+		} else {
+			fmt.Printf("%v are inactive\n", etcdServices)
+			useLock = false
+		}
+	case StrategyEtcdLock:
+		useLock = true
+	case StrategyReboot:
+		useLock = false
+	default:
+		return false, fmt.Errorf("Unknown strategy: %s", strategy)
+	}
+
+	return useLock, nil
+}
+
 // unlockIfHeld will unlock a lock, if it is held by this machine, or return an error.
 func unlockIfHeld(lck *lock.Lock) error {
 	err := lck.Unlock()
@@ -250,7 +256,7 @@ func unlockIfHeld(lck *lock.Lock) error {
 
 // unlockHeldLock will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
-func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
+func unlockHeldLocks(strategy string, stop chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
 	interval := initialInterval
 	for {
@@ -259,12 +265,16 @@ func unlockHeldLocks(stop chan struct{}, wg *sync.WaitGroup) {
 		case <-stop:
 			return
 		case <-time.After(interval):
-			active, _, err := etcdActive()
+			// Here we assume that the strategy used by locksmith
+			// is consistent with that used before the previous
+			// reboot (if any), and use that to decide whether to
+			// attempt to unlock.
+			shouldUnlock, err := useLock(strategy)
 			if err != nil {
-				reason = fmt.Sprintf("error checking status of %v", etcdServices)
+				reason = fmt.Sprintf("error checking whether lock should be released: %v", err)
 				break
 			}
-			if !active {
+			if !shouldUnlock {
 				reason = fmt.Sprintf("%v are inactive", etcdServices)
 				break
 			}
@@ -346,7 +356,7 @@ func runDaemon() int {
 	var wg sync.WaitGroup
 	if strategy != StrategyReboot {
 		wg.Add(1)
-		go unlockHeldLocks(stop, &wg)
+		go unlockHeldLocks(strategy, stop, &wg)
 	}
 
 	ch := make(chan updateengine.Status, 1)
