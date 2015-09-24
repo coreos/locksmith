@@ -173,5 +173,10 @@ For a client to take the lock, the document is swapped with this:
 }
 ```
 
+## Bugs
+
+Please use the [CoreOS issue tracker][bugs] to report all bugs, issues, and feature requests.
+
 [semaphore]: http://en.wikipedia.org/wiki/Semaphore_(programming)
 [cas]: https://github.com/coreos/etcd/blob/master/Documentation/api.md#atomic-compare-and-swap
+[bugs]: https://github.com/coreos/bugs/issues/new?labels=component/locksmith
