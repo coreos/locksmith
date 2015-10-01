@@ -1,3 +1,7 @@
+### v0.3.2
+
+Set GOMAXPROCS=1 in the locksmithd systemd service to keep behavior consistent between builds using Go 1.5 and previous versions.
+
 ### v0.3.1
 
 v0.3.1 is the first release with a changelog :-)
