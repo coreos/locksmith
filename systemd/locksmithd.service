@@ -1,5 +1,7 @@
 [Unit]
 Description=Cluster reboot manager
+Requires=update-engine.service
+After=update-engine.service user-config.target system-config.target
 ConditionVirtualization=!container
 ConditionPathExists=!/usr/.noupdate
 
