@@ -1,3 +1,9 @@
+### v0.3.3
+
+Remove dependency on update-engine.service from locksmithd.service. If
+update-engine failed to start, systemd wouldn't start locksmith and the restart
+logic only applies if the service can be started.
+
 ### v0.3.2
 
 Set GOMAXPROCS=1 in the locksmithd systemd service to keep behavior consistent between builds using Go 1.5 and previous versions.
