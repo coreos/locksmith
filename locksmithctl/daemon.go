@@ -314,8 +314,18 @@ func runDaemon() int {
 		return 0
 	}
 
-	startw := os.Getenv("REBOOT_WINDOW_START")
-	lengthw := os.Getenv("REBOOT_WINDOW_LENGTH")
+	// XXX: REBOOT_WINDOW_* are deprecated in favor of variables with LOCKSMITHD_ prefix,
+	// but the old ones are read for compatibility.
+	startw := os.Getenv("LOCKSMITHD_REBOOT_WINDOW_START")
+	if startw == "" {
+		startw = os.Getenv("REBOOT_WINDOW_START")
+	}
+
+	lengthw := os.Getenv("LOCKSMITHD_REBOOT_WINDOW_LENGTH")
+	if lengthw == "" {
+		lengthw = os.Getenv("REBOOT_WINDOW_LENGTH")
+	}
+
 	if (startw == "") != (lengthw == "") {
 		fmt.Fprintln(os.Stderr, "either both or neither $REBOOT_WINDOW_START and $REBOOT_WINDOW_LENGTH must be set")
 		return 1
