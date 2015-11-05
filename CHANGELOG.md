@@ -1,3 +1,12 @@
+### v0.3.4
+
+The environment variables controlling reboot windows (`REBOOT_WINDOW_START`,
+`REBOOT_WINDOW_LENGTH`) have been renamed to include the prefix `LOCKSMITHD_`
+to maintain consistency with other locksmithd environment variables.
+
+The old environment variables are still read to maintain compatibility with
+locksmithd v0.3.1 to v0.3.3.
+
 ### v0.3.3
 
 Remove dependency on update-engine.service from locksmithd.service. If
