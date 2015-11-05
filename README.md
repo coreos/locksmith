@@ -111,19 +111,20 @@ environment variable.
 
 `locksmithd` can be configured to only reboot during certain timeframes. The
 reboot window is configured through two environment variables,
-`REBOOT_WINDOW_START` and `REBOOT_WINDOW_LENGTH`. Here is an example configuration:
+`LOCKSMITHD_REBOOT_WINDOW_START` and `LOCKSMITHD_REBOOT_WINDOW_LENGTH`. Here is an example configuration:
 
 ```
-REBOOT_WINDOW_START=14:00
-REBOOT_WINDOW_LENGTH=1h
+LOCKSMITHD_REBOOT_WINDOW_START=14:00
+LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h
 ```
 
 This would configure `locksmithd` to only reboot between 2pm and 3pm. Optionally,
+
 a day of week may be specified for the start of the window:
 
 ```
-REBOOT_WINDOW_START=Thu 23:00
-REBOOT_WINDOW_LENGTH=1h30m
+LOCKSMITHD_REBOOT_WINDOW_START=Thu 23:00
+LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h30m
 ```
 
 This would configure `locksmithd` to only reboot the system on Thursday after 11pm,
