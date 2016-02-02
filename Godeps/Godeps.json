@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/coreos/locksmith",
-	"GoVersion": "go1.3.1",
+	"GoVersion": "go1.4.3",
 	"Packages": [
 		"./..."
 	],
@@ -9,6 +9,21 @@
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
 			"Comment": "v0.2.0-rc1-114-g7745cfd7f8e6",
 			"Rev": "7745cfd7f8e619cc9e6be450238e6253a57a227f"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/client",
+			"Comment": "v2.2.5",
+			"Rev": "bc9ddf260115d2680191c46977ae72b837785472"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/pathutil",
+			"Comment": "v2.2.5",
+			"Rev": "bc9ddf260115d2680191c46977ae72b837785472"
+		},
+		{
+			"ImportPath": "github.com/coreos/etcd/pkg/types",
+			"Comment": "v2.2.5",
+			"Rev": "bc9ddf260115d2680191c46977ae72b837785472"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-systemd/dbus",
@@ -24,6 +39,14 @@
 			"ImportPath": "github.com/godbus/dbus",
 			"Comment": "0-13-g25a4b8ca48c6",
 			"Rev": "25a4b8ca48c64b3d631110fb74a210f56c401e0b"
+		},
+		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "f1f1a805ed361a0e078bb537e4ea78cd37dcf065"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "d513e58596cd55e6f47cd1dcbff6b46035baeccb"
 		}
 	]
 }
