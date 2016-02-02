@@ -6,11 +6,6 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/coreos/go-etcd/etcd",
-			"Comment": "v0.2.0-rc1-114-g7745cfd7f8e6",
-			"Rev": "7745cfd7f8e619cc9e6be450238e6253a57a227f"
-		},
-		{
 			"ImportPath": "github.com/coreos/etcd/client",
 			"Comment": "v2.2.5",
 			"Rev": "bc9ddf260115d2680191c46977ae72b837785472"
