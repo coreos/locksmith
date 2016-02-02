@@ -20,9 +20,9 @@ import (
 	"net/url"
 	"path"
 
-	// TODO(jonboulle): this is a leaky abstraction, but we don't want to reimplement all go-etcd types in locksmith/etcd. This should go away once go-etcd is replaced.
-	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
-	"github.com/coreos/locksmith/etcd"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
+
+	"github.com/coreos/locksmith/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 const (
@@ -32,55 +32,67 @@ const (
 	SemaphorePrefix = keyPrefix + "/" + semaphoreBranch
 )
 
+// KeysAPI is the minimum etcd client.KeysAPI interface EtcdLockClient needs
+// to do its job.
+type KeysAPI interface {
+	Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error)
+	Set(ctx context.Context, key, value string, opts *client.SetOptions) (*client.Response, error)
+	Create(ctx context.Context, key, value string) (*client.Response, error)
+}
+
 // EtcdLockClient is a wrapper around the etcd client that provides
 // simple primitives to operate on the internal semaphore and holders
 // structs through etcd.
 type EtcdLockClient struct {
-	client  etcd.EtcdClient
+	keyapi  KeysAPI
 	keypath string
 }
 
 // NewEtcdLockClient creates a new EtcdLockClient. The group parameter defines
 // the etcd key path in which the client will manipulate the semaphore. If the
 // group is the empty string, the default semaphore will be used.
-func NewEtcdLockClient(ec etcd.EtcdClient, group string) (client *EtcdLockClient, err error) {
+func NewEtcdLockClient(keyapi KeysAPI, group string) (*EtcdLockClient, error) {
 	key := SemaphorePrefix
 	if group != "" {
 		key = path.Join(keyPrefix, groupBranch, url.QueryEscape(group), semaphoreBranch)
 	}
 
-	client = &EtcdLockClient{ec, key}
-	err = client.Init()
-	return
+	elc := &EtcdLockClient{keyapi, key}
+	if err := elc.Init(); err != nil {
+		return nil, err
+	}
+
+	return elc, nil
 }
 
 // Init sets an initial copy of the semaphore if it doesn't exist yet.
-func (c *EtcdLockClient) Init() (err error) {
+func (c *EtcdLockClient) Init() error {
 	sem := newSemaphore()
 	b, err := json.Marshal(sem)
 	if err != nil {
 		return err
 	}
 
-	_, err = c.client.Create(c.keypath, string(b), 0)
-	if err != nil {
-		eerr, ok := err.(*goetcd.EtcdError)
-		if ok && eerr.ErrorCode == etcd.ErrorNodeExist {
+	if _, err := c.keyapi.Create(context.Background(), c.keypath, string(b)); err != nil {
+		eerr, ok := err.(*client.Error)
+		if ok && eerr.Code == client.ErrorCodeNodeExist {
 			return nil
 		}
+
+		return err
 	}
 
-	return err
+	return nil
 }
 
 // Get fetches the Semaphore from etcd.
-func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
-	resp, err := c.client.Get(c.keypath, false, false)
+func (c *EtcdLockClient) Get() (*Semaphore, error) {
+	resp, err := c.keyapi.Get(context.Background(), c.keypath, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	sem = &Semaphore{}
+	sem := &Semaphore{}
 	err = json.Unmarshal([]byte(resp.Node.Value), sem)
 	if err != nil {
 		return nil, err
@@ -92,7 +104,7 @@ func (c *EtcdLockClient) Get() (sem *Semaphore, err error) {
 }
 
 // Set sets a Semaphore in etcd.
-func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
+func (c *EtcdLockClient) Set(sem *Semaphore) error {
 	if sem == nil {
 		return errors.New("cannot set nil semaphore")
 	}
@@ -101,7 +113,10 @@ func (c *EtcdLockClient) Set(sem *Semaphore) (err error) {
 		return err
 	}
 
-	_, err = c.client.CompareAndSwap(c.keypath, string(b), 0, "", sem.Index)
+	setopts := &client.SetOptions{
+		PrevIndex: sem.Index,
+	}
 
+	_, err = c.keyapi.Set(context.Background(), c.keypath, string(b), setopts)
 	return err
 }

@@ -19,25 +19,24 @@ import (
 	"reflect"
 	"testing"
 
-	// TODO(jonboulle): this is a leaky abstraction, but we don't want to reimplement all go-etcd types in locksmith/etcd. This should go away once go-etcd is replaced.
-	goetcd "github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-etcd/etcd"
-	"github.com/coreos/locksmith/etcd"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/golang.org/x/net/context"
 )
 
 type testEtcdClient struct {
 	err  error
-	resp *goetcd.Response
+	resp *client.Response
 }
 
-func (t *testEtcdClient) Create(key string, value string, ttl uint64) (*goetcd.Response, error) {
+func (t *testEtcdClient) Get(ctx context.Context, key string, opts *client.GetOptions) (*client.Response, error) {
 	return t.resp, t.err
 }
 
-func (t *testEtcdClient) CompareAndSwap(key string, value string, ttl uint64, prevValue string, prevIndex uint64) (*goetcd.Response, error) {
+func (t *testEtcdClient) Set(ctx context.Context, key, value string, opts *client.SetOptions) (*client.Response, error) {
 	return t.resp, t.err
 }
 
-func (t *testEtcdClient) Get(key string, sort, recursive bool) (*goetcd.Response, error) {
+func (t *testEtcdClient) Create(ctx context.Context, key, value string) (*client.Response, error) {
 	return t.resp, t.err
 }
 
@@ -49,25 +48,31 @@ func TestEtcdLockClientInit(t *testing.T) {
 		keypath string
 	}{
 		{nil, false, "", SemaphorePrefix},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, false, "", SemaphorePrefix},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true, "", SemaphorePrefix},
+		{&client.Error{Code: client.ErrorCodeNodeExist}, false, "", SemaphorePrefix},
+		{&client.Error{Code: client.ErrorCodeKeyNotFound}, true, "", SemaphorePrefix},
 		{errors.New("some random error"), true, "", SemaphorePrefix},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true, "database", "coreos.com/updateengine/rebootlock/groups/database/semaphore"},
+		{&client.Error{Code: client.ErrorCodeKeyNotFound}, true, "database", "coreos.com/updateengine/rebootlock/groups/database/semaphore"},
 		{nil, false, "prod/database", "coreos.com/updateengine/rebootlock/groups/prod%2Fdatabase/semaphore"},
 	} {
 		elc, got := NewEtcdLockClient(&testEtcdClient{err: tt.ee}, tt.group)
 		if (got != nil) != tt.want {
 			t.Errorf("case %d: unexpected error state initializing Client: got %v", i, got)
+			continue
 		}
+
+		if got != nil {
+			continue
+		}
+
 		if elc.keypath != tt.keypath {
 			t.Errorf("case %d: unexpected etcd key path: got %v want %v", i, elc.keypath, tt.keypath)
 		}
 	}
 }
 
-func makeResponse(idx int, val string) *goetcd.Response {
-	return &goetcd.Response{
-		Node: &goetcd.Node{
+func makeResponse(idx int, val string) *client.Response {
+	return &client.Response{
+		Node: &client.Node{
 			Value:         val,
 			ModifiedIndex: uint64(idx),
 		},
@@ -77,13 +82,13 @@ func makeResponse(idx int, val string) *goetcd.Response {
 func TestEtcdLockClientGet(t *testing.T) {
 	for i, tt := range []struct {
 		ee error
-		er *goetcd.Response
+		er *client.Response
 		ws *Semaphore
 		we bool
 	}{
 		// errors returned from etcd
 		{errors.New("some error"), nil, nil, true},
-		{&goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, nil, nil, true},
+		{&client.Error{Code: client.ErrorCodeKeyNotFound}, nil, nil, true},
 		// bad JSON should cause errors
 		{nil, makeResponse(0, "asdf"), nil, true},
 		{nil, makeResponse(0, `{"semaphore:`), nil, true},
@@ -94,7 +99,7 @@ func TestEtcdLockClientGet(t *testing.T) {
 		{nil, makeResponse(1234, `{"semaphore": 89, "index": 4567}`), &Semaphore{Index: 1234, Semaphore: 89}, false},
 	} {
 		elc := &EtcdLockClient{
-			client: &testEtcdClient{
+			keyapi: &testEtcdClient{
 				err:  tt.ee,
 				resp: tt.er,
 			},
@@ -127,12 +132,12 @@ func TestEtcdLockClientSet(t *testing.T) {
 		{&Semaphore{}, nil, false},
 		{&Semaphore{Index: uint64(1234)}, nil, false},
 		// all errors returned from etcd should propagate
-		{&Semaphore{}, &goetcd.EtcdError{ErrorCode: etcd.ErrorNodeExist}, true},
-		{&Semaphore{}, &goetcd.EtcdError{ErrorCode: etcd.ErrorKeyNotFound}, true},
+		{&Semaphore{}, &client.Error{Code: client.ErrorCodeNodeExist}, true},
+		{&Semaphore{}, &client.Error{Code: client.ErrorCodeKeyNotFound}, true},
 		{&Semaphore{}, errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{
-			client: &testEtcdClient{err: tt.ee},
+			keyapi: &testEtcdClient{err: tt.ee},
 		}
 		got := elc.Set(tt.sem)
 		if (got != nil) != tt.want {

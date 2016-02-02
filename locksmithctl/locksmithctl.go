@@ -15,16 +15,23 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"os"
 	"path"
 	"strings"
 	"text/tabwriter"
+	"time"
 
-	"github.com/coreos/locksmith/etcd"
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/version"
+
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
 )
 
 const (
@@ -169,19 +176,54 @@ func main() {
 // getLockClient returns an initialized EtcdLockClient, using an etcd
 // client configured from the global etcd flags
 func getClient() (*lock.EtcdLockClient, error) {
-	var ti *etcd.TLSInfo
-	if globalFlags.EtcdCAFile != "" || globalFlags.EtcdCertFile != "" || globalFlags.EtcdKeyFile != "" {
-		ti = &etcd.TLSInfo{
-			CertFile: globalFlags.EtcdCertFile,
-			KeyFile:  globalFlags.EtcdKeyFile,
-			CAFile:   globalFlags.EtcdCAFile,
-		}
+	// copy of github.com/coreos/etcd/client.DefaultTransport so that
+	// TLSClientConfig can be overridden.
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		Dial: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).Dial,
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
-	ec, err := etcd.NewClient(globalFlags.Endpoints, ti)
+
+	if globalFlags.EtcdCAFile != "" || globalFlags.EtcdCertFile != "" || globalFlags.EtcdKeyFile != "" {
+		cert, err := tls.LoadX509KeyPair(globalFlags.EtcdCertFile, globalFlags.EtcdKeyFile)
+		if err != nil {
+			return nil, err
+		}
+
+		ca, err := ioutil.ReadFile(globalFlags.EtcdCAFile)
+		if err != nil {
+			return nil, err
+		}
+
+		capool := x509.NewCertPool()
+		capool.AppendCertsFromPEM(ca)
+
+		tlsconf := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+			RootCAs:      capool,
+		}
+
+		tlsconf.BuildNameToCertificate()
+
+		transport.TLSClientConfig = tlsconf
+	}
+
+	cfg := client.Config{
+		Endpoints: globalFlags.Endpoints,
+		Transport: transport,
+	}
+
+	ec, err := client.New(cfg)
 	if err != nil {
 		return nil, err
 	}
-	lc, err := lock.NewEtcdLockClient(ec, globalFlags.Group)
+
+	kapi := client.NewKeysAPI(ec)
+
+	lc, err := lock.NewEtcdLockClient(kapi, globalFlags.Group)
 	if err != nil {
 		return nil, err
 	}
