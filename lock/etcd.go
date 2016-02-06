@@ -74,7 +74,7 @@ func (c *EtcdLockClient) Init() error {
 	}
 
 	if _, err := c.keyapi.Create(context.Background(), c.keypath, string(b)); err != nil {
-		eerr, ok := err.(*client.Error)
+		eerr, ok := err.(client.Error)
 		if ok && eerr.Code == client.ErrorCodeNodeExist {
 			return nil
 		}

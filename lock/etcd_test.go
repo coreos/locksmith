@@ -48,10 +48,10 @@ func TestEtcdLockClientInit(t *testing.T) {
 		keypath string
 	}{
 		{nil, false, "", SemaphorePrefix},
-		{&client.Error{Code: client.ErrorCodeNodeExist}, false, "", SemaphorePrefix},
-		{&client.Error{Code: client.ErrorCodeKeyNotFound}, true, "", SemaphorePrefix},
+		{client.Error{Code: client.ErrorCodeNodeExist}, false, "", SemaphorePrefix},
+		{client.Error{Code: client.ErrorCodeKeyNotFound}, true, "", SemaphorePrefix},
 		{errors.New("some random error"), true, "", SemaphorePrefix},
-		{&client.Error{Code: client.ErrorCodeKeyNotFound}, true, "database", "coreos.com/updateengine/rebootlock/groups/database/semaphore"},
+		{client.Error{Code: client.ErrorCodeKeyNotFound}, true, "database", "coreos.com/updateengine/rebootlock/groups/database/semaphore"},
 		{nil, false, "prod/database", "coreos.com/updateengine/rebootlock/groups/prod%2Fdatabase/semaphore"},
 	} {
 		elc, got := NewEtcdLockClient(&testEtcdClient{err: tt.ee}, tt.group)
@@ -88,7 +88,7 @@ func TestEtcdLockClientGet(t *testing.T) {
 	}{
 		// errors returned from etcd
 		{errors.New("some error"), nil, nil, true},
-		{&client.Error{Code: client.ErrorCodeKeyNotFound}, nil, nil, true},
+		{client.Error{Code: client.ErrorCodeKeyNotFound}, nil, nil, true},
 		// bad JSON should cause errors
 		{nil, makeResponse(0, "asdf"), nil, true},
 		{nil, makeResponse(0, `{"semaphore:`), nil, true},
@@ -132,8 +132,8 @@ func TestEtcdLockClientSet(t *testing.T) {
 		{&Semaphore{}, nil, false},
 		{&Semaphore{Index: uint64(1234)}, nil, false},
 		// all errors returned from etcd should propagate
-		{&Semaphore{}, &client.Error{Code: client.ErrorCodeNodeExist}, true},
-		{&Semaphore{}, &client.Error{Code: client.ErrorCodeKeyNotFound}, true},
+		{&Semaphore{}, client.Error{Code: client.ErrorCodeNodeExist}, true},
+		{&Semaphore{}, client.Error{Code: client.ErrorCodeKeyNotFound}, true},
 		{&Semaphore{}, errors.New("some random error"), true},
 	} {
 		elc := &EtcdLockClient{
