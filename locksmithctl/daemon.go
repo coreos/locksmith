@@ -29,6 +29,7 @@ import (
 
 	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-systemd/dbus"
 	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/go-systemd/login1"
+	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/pkg/capnslog"
 
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/pkg/machineid"
@@ -47,6 +48,9 @@ var (
 		"etcd.service",
 		"etcd2.service",
 	}
+
+	// TODO(mischief): daemon is not really a seperate package. it probably should be.
+	dlog = capnslog.NewPackageLogger("github.com/coreos/locksmith", "daemon")
 )
 
 const (
@@ -101,11 +105,11 @@ func rebootAndSleep(lgn *login1.Conn) {
 	delaymins := loginsRebootDelay / time.Minute
 	lines := broadcast(fmt.Sprintf("System reboot in %d minutes!", delaymins))
 	if 0 != lines {
-		fmt.Printf("Logins detected, delaying reboot for %d minutes.\n", delaymins)
+		dlog.Noticef("Logins detected, delaying reboot for %d minutes.", delaymins)
 		time.Sleep(loginsRebootDelay)
 	}
 	lgn.Reboot(false)
-	fmt.Println("Reboot sent. Going to sleep.")
+	dlog.Info("Reboot sent. Going to sleep.")
 
 	// Wait a really long time for the reboot to occur.
 	time.Sleep(time.Hour * 24 * 7)
@@ -119,7 +123,7 @@ func (r rebooter) lockAndReboot(lck *lock.Lock) {
 		err := lck.Lock()
 		if err != nil && err != lock.ErrExist {
 			interval = expBackoff(interval)
-			fmt.Printf("Retrying in %v. Error locking: %v\n", interval, err)
+			dlog.Warningf("Failed to acquire lock: %v. Retrying in %v.", err, interval)
 			time.Sleep(interval)
 
 			continue
@@ -185,20 +189,20 @@ type rebooter struct {
 func (r rebooter) reboot() int {
 	useLock, err := useLock(r.strategy)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		dlog.Errorf("Failed to figure out if locksmithd needs to use a lock: %v", err)
 		return 1
 	}
 
 	if useLock {
 		lck, err := setupLock()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			dlog.Errorf("Failed to set up lock: %v", err)
 			return 1
 		}
 
 		err = unlockIfHeld(lck)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			dlog.Errorf("Failed to unlock held lock: %v", err)
 			return 1
 		}
 
@@ -206,7 +210,7 @@ func (r rebooter) reboot() int {
 	}
 
 	rebootAndSleep(r.lgn)
-	fmt.Println("Error: reboot attempt never finished")
+	dlog.Fatal("Tried to reboot but did not!")
 	return 1
 }
 
@@ -224,10 +228,10 @@ func useLock(strategy string) (useLock bool, err error) {
 			return false, err
 		}
 		if active {
-			fmt.Printf("%s is active\n", name)
+			dlog.Infof("%s is active", name)
 			useLock = true
 		} else {
-			fmt.Printf("%v are inactive\n", etcdServices)
+			dlog.Infof("%v are inactive", etcdServices)
 			useLock = false
 		}
 	case StrategyEtcdLock:
@@ -235,7 +239,7 @@ func useLock(strategy string) (useLock bool, err error) {
 	case StrategyReboot:
 		useLock = false
 	default:
-		return false, fmt.Errorf("Unknown strategy: %s", strategy)
+		return false, fmt.Errorf("unknown strategy: %s", strategy)
 	}
 
 	return useLock, nil
@@ -247,7 +251,7 @@ func unlockIfHeld(lck *lock.Lock) error {
 	if err == lock.ErrNotExist {
 		return nil
 	} else if err == nil {
-		fmt.Println("Unlocked existing lock for this machine")
+		dlog.Info("Unlocked existing lock for this machine")
 		return nil
 	}
 
@@ -293,7 +297,7 @@ func unlockHeldLocks(strategy string, stop chan struct{}, wg *sync.WaitGroup) {
 		}
 
 		interval = expBackoff(interval)
-		fmt.Printf("Unlocking old locks failed: %v. Retrying in %v.\n", reason, interval)
+		dlog.Errorf("Unlocking old locks failed: %v. Retrying in %v.", reason, interval)
 	}
 }
 
@@ -310,7 +314,7 @@ func runDaemon() int {
 	}
 
 	if strategy == StrategyOff {
-		fmt.Fprintf(os.Stderr, "Reboot strategy is %q - shutting down.\n", strategy)
+		dlog.Noticef("Reboot strategy is %q - shutting down.", strategy)
 		return 0
 	}
 
@@ -327,15 +331,13 @@ func runDaemon() int {
 	}
 
 	if (startw == "") != (lengthw == "") {
-		fmt.Fprintln(os.Stderr, "either both or neither $REBOOT_WINDOW_START and $REBOOT_WINDOW_LENGTH must be set")
-		return 1
+		dlog.Fatal("Either both or neither $REBOOT_WINDOW_START and $REBOOT_WINDOW_LENGTH must be set")
 	}
 
 	if startw != "" && lengthw != "" {
 		p, err := timeutil.ParsePeriodic(startw, lengthw)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error parsing reboot window: %s\n", err)
-			return 1
+			dlog.Fatalf("Error parsing reboot window: %s", err)
 		}
 
 		period = p
@@ -346,21 +348,19 @@ func runDaemon() int {
 
 	go func() {
 		<-shutdown
-		fmt.Fprintln(os.Stderr, "Received interrupt/termination signal - shutting down.")
+		dlog.Notice("Received interrupt/termination signal - shutting down.")
 		os.Exit(0)
 	}()
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
 	ue, err := updateengine.New()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error initializing update1 client:", err)
-		return 1
+		dlog.Fatalf("Error initializing update1 client: %v", err)
 	}
 
 	lgn, err := login1.New()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error initializing login1 client:", err)
-		return 1
+		dlog.Fatalf("Error initializing login1 client: %v", err)
 	}
 
 	var wg sync.WaitGroup
@@ -376,14 +376,10 @@ func runDaemon() int {
 
 	result, err := ue.GetStatus()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Cannot get update engine status:", err)
-		return 1
+		dlog.Fatalf("Cannot get update engine status: %v", err)
 	}
 
-	fmt.Printf("locksmithd starting currentOperation=%q strategy=%q\n",
-		result.CurrentOperation,
-		strategy,
-	)
+	dlog.Infof("locksmithd starting currentOperation=%q strategy=%q", result.CurrentOperation, strategy)
 
 	if result.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
 		<-ch
@@ -396,7 +392,7 @@ func runDaemon() int {
 		now := time.Now()
 		sleeptime := period.DurationToStart(now)
 		if sleeptime > 0 {
-			fmt.Printf("Waiting for %s to reboot.\n", sleeptime)
+			dlog.Infof("Waiting for %s to reboot.", sleeptime)
 			time.Sleep(sleeptime)
 		}
 	}
