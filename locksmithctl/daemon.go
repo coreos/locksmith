@@ -313,6 +313,13 @@ func runDaemon() int {
 		strategy = StrategyBestEffort
 	}
 
+	// XXX: complain loudly if besteffort is used
+	if strategy == StrategyBestEffort {
+		dlog.Errorf("Reboot strategy %q is deprecated and will be removed in the future.", strategy)
+		dlog.Errorf("Please explicitly set the reboot strategy to one of %v", []string{StrategyOff, StrategyReboot, StrategyEtcdLock})
+		dlog.Error("See https://coreos.com/os/docs/latest/update-strategies.html for details on configuring reboot strategies.")
+	}
+
 	if strategy == StrategyOff {
 		dlog.Noticef("Reboot strategy is %q - shutting down.", strategy)
 		return 0
