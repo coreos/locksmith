@@ -350,6 +350,14 @@ func runDaemon() int {
 		period = p
 	}
 
+	if period != nil {
+		dlog.Infof("Reboot window start is %q and length is %q", startw, lengthw)
+		next := period.Next(time.Now())
+		dlog.Infof("Next window begins at %s and ends at %s", next.Start, next.End)
+	} else {
+		dlog.Info("No configured reboot window")
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	stop := make(chan struct{}, 1)
 
