@@ -321,7 +321,7 @@ func runDaemon() int {
 	}
 
 	if strategy == StrategyOff {
-		dlog.Noticef("Reboot strategy is %q - shutting down.", strategy)
+		dlog.Noticef("Reboot strategy is %q - locksmithd is exiting.", strategy)
 		return 0
 	}
 
