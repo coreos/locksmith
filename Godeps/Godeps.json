@@ -26,9 +26,18 @@
 			"Rev": "e3e4f602334ec3e1c2cd68322a1284903c62f940"
 		},
 		{
+			"ImportPath": "github.com/coreos/go-systemd/journal",
+			"Comment": "v2-39-ge3e4f60",
+			"Rev": "e3e4f602334ec3e1c2cd68322a1284903c62f940"
+		},
+		{
 			"ImportPath": "github.com/coreos/go-systemd/login1",
 			"Comment": "v2-39-ge3e4f602334e",
 			"Rev": "e3e4f602334ec3e1c2cd68322a1284903c62f940"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/capnslog",
+			"Rev": "549bd7890e3564e9a2409d9700ea365005edad8d"
 		},
 		{
 			"ImportPath": "github.com/godbus/dbus",
