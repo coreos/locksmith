@@ -363,7 +363,7 @@ func runDaemon() int {
 
 	go func() {
 		<-shutdown
-		dlog.Notice("Received interrupt/termination signal - shutting down.")
+		dlog.Notice("Received interrupt/termination signal - locksmithd is exiting.")
 		os.Exit(0)
 	}()
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
