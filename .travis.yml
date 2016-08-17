@@ -2,8 +2,8 @@ sudo: false
 language: go
 matrix:
   include:
-    - go: 1.5
-    - go: 1.6
+    - go: 1.5.4
+    - go: 1.6.3
     - go: 1.7
   allow_failures:
     - go: tip
