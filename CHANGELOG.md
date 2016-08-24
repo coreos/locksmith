@@ -1,3 +1,21 @@
+### v0.4.0
+
+Locksmith now uses github.com/coreos/etcd/client, instead of the deprecated
+github.com/coreos/go-etcd.
+
+Locksmith now uses github.com/coreos/pkg/capnslog for logging.
+
+The reboot strategy `best-effort` is deprecated, and locksmithd will complain
+loudly if it is used. Please use an explicit `reboot` or `etcd-lock` strategy
+instead.
+
+Locksmith logs some information about the configured reboot window.
+
+Locksmith supports etcd basic auth.
+
+Locksmith again requires update-engine.service, and will start after
+user-config.target system-config.target are reached.
+
 ### v0.3.4
 
 The environment variables controlling reboot windows (`REBOOT_WINDOW_START`,
