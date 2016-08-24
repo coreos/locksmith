@@ -8,6 +8,8 @@ matrix:
   allow_failures:
     - go: tip
 
+install: true
+
 script:
  - ./test
 
