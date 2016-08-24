@@ -20,9 +20,9 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
+	"github.com/coreos/etcd/client"
 
-	"github.com/coreos/locksmith/Godeps/_workspace/src/golang.org/x/net/context"
+	"golang.org/x/net/context"
 )
 
 const (

@@ -31,7 +31,7 @@ import (
 	"github.com/coreos/locksmith/lock"
 	"github.com/coreos/locksmith/version"
 
-	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
+	"github.com/coreos/etcd/client"
 )
 
 const (

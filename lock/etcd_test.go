@@ -19,8 +19,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/coreos/locksmith/Godeps/_workspace/src/github.com/coreos/etcd/client"
-	"github.com/coreos/locksmith/Godeps/_workspace/src/golang.org/x/net/context"
+	"github.com/coreos/etcd/client"
+	"golang.org/x/net/context"
 )
 
 type testEtcdClient struct {
