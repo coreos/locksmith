@@ -1,3 +1,9 @@
+### v0.4.1
+
+Locksmith no longer requires update-engine.service and does not have an
+ordering dependency on user-config.target and system-config.target due to the
+dependency loop when using coreos-cloudinit.
+
 ### v0.4.0
 
 Locksmith now uses github.com/coreos/etcd/client, instead of the deprecated
