@@ -11,7 +11,7 @@ Environment=GOMAXPROCS=1
 EnvironmentFile=-/usr/share/coreos/update.conf
 EnvironmentFile=-/etc/coreos/update.conf
 ExecStart=/usr/lib/locksmith/locksmithd
-Restart=always
+Restart=on-failure
 RestartSec=10s
 
 [Install]
