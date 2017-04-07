@@ -12,7 +12,6 @@ engine has successfully applied an update:
 
 - `etcd-lock` - reboot after first taking a lock in etcd.
 - `reboot` - reboot immediately without taking a lock.
-- `best-effort` - if etcd is running, then do `etcd-lock`; otherwise, `reboot`.
 - `off` - causes locksmithd to exit and do nothing.
 
 These strategies can be configured via `/etc/coreos/update.conf` with a line that looks like:
@@ -21,9 +20,10 @@ These strategies can be configured via `/etc/coreos/update.conf` with a line tha
 REBOOT_STRATEGY=reboot
 ```
 
-The reboot strategy can also be configured through [cloud-config](https://github.com/coreos/coreos-cloudinit/blob/master/Documentation/cloud-config.md#update).
+The reboot strategy can also be configured through a [Container Linux Config](https://github.com/coreos/container-linux-config-transpiler/blob/master/doc/getting-started.md).
 
-The default strategy is `best-effort`.
+The default strategy is to follow the `etcd-lock` strategy if etcd is running,
+and to otherwise follow the `reboot` strategy.
 
 ## Usage
 
@@ -123,7 +123,7 @@ This would configure `locksmithd` to only reboot between 2pm and 3pm. Optionally
 a day of week may be specified for the start of the window:
 
 ```
-LOCKSMITHD_REBOOT_WINDOW_START=Thu 23:00
+LOCKSMITHD_REBOOT_WINDOW_START="Thu 23:00"
 LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h30m
 ```
 
