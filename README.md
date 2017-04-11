@@ -1,6 +1,6 @@
 # locksmith
 
-locksmith is a reboot manager for the CoreOS update engine which uses
+locksmith is a reboot manager for the CoreOS update engine which is able to use
 etcd to ensure that only a subset of a cluster of machines are rebooting
 at any given time. `locksmithd` runs as a daemon on CoreOS machines and is
 responsible for controlling the reboot behaviour after updates.
