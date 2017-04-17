@@ -11,8 +11,11 @@ There are three different strategies that `locksmithd` can use after the update
 engine has successfully applied an update:
 
 - `etcd-lock` - reboot after first taking a lock in etcd.
-- `reboot` - reboot immediately without taking a lock.
+- `reboot` - reboot without taking a lock.
 - `off` - causes locksmithd to exit and do nothing.
+
+These strategies will either be followed immediately after an update, or during
+the next available [reboot window](#reboot-windows) if one has been configured.
 
 These strategies can be configured via `/etc/coreos/update.conf` with a line that looks like:
 
@@ -109,9 +112,12 @@ environment variable.
 
 ## Reboot windows
 
-`locksmithd` can be configured to only reboot during certain timeframes. The
-reboot window is configured through two environment variables,
-`LOCKSMITHD_REBOOT_WINDOW_START` and `LOCKSMITHD_REBOOT_WINDOW_LENGTH`. Here is an example configuration:
+`locksmithd` can be configured to only reboot during certain timeframes. These
+reboot windows work with any reboot strategy.
+
+The reboot window is configured through two environment variables,
+`LOCKSMITHD_REBOOT_WINDOW_START` and `LOCKSMITHD_REBOOT_WINDOW_LENGTH`. Here is
+an example configuration:
 
 ```
 LOCKSMITHD_REBOOT_WINDOW_START=14:00
