@@ -12,31 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// +build go1.5
+// Package main is a simple wrapper of the real etcd entrypoint package
+// (located at github.com/coreos/etcd/etcdmain) to ensure that etcd is still
+// "go getable"; e.g. `go get github.com/coreos/etcd` works as expected and
+// builds a binary in $GOBIN/etcd
+//
+// This package should NOT be extended or modified in any way; to modify the
+// etcd binary, work in the `github.com/coreos/etcd/etcdmain` package.
+//
 
-package client
+package main
 
-import (
-	"errors"
-	"net/http"
-)
+import "github.com/coreos/etcd/etcdmain"
 
-func (t *fakeTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	select {
-	case resp := <-t.respchan:
-		return resp, nil
-	case err := <-t.errchan:
-		return nil, err
-	case <-t.startCancel:
-	case <-req.Cancel:
-	}
-	select {
-	// this simulates that the request is finished before cancel effects
-	case resp := <-t.respchan:
-		return resp, nil
-	// wait on finishCancel to simulate taking some amount of
-	// time while calling CancelRequest
-	case <-t.finishCancel:
-		return nil, errors.New("cancelled")
-	}
+func main() {
+	etcdmain.Main()
 }
