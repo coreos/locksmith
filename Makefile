@@ -23,7 +23,7 @@ bin/%:
 
 .PHONY: test
 test:
-	$(Q)./test
+	$(Q)./scripts/test
 
 .PHONY: vendor
 vendor:

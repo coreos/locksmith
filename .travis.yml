@@ -11,5 +11,5 @@ matrix:
 install: true
 
 script:
- - ./test
+ - make test
 
