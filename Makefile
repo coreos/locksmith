@@ -9,8 +9,6 @@ else
 	Q = @
 endif
 
-export GO15VENDOREXPERIMENT:=1
-
 VERSION=$(shell git describe --dirty)
 REPO=github.com/coreos/locksmith
 LD_FLAGS="-w -s -extldflags -static"
