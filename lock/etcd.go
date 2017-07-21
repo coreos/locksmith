@@ -29,6 +29,7 @@ const (
 	keyPrefix       = "coreos.com/updateengine/rebootlock"
 	groupBranch     = "groups"
 	semaphoreBranch = "semaphore"
+	// SemaphorePrefix is the key in etcd where the semaphore will be stored
 	SemaphorePrefix = keyPrefix + "/" + semaphoreBranch
 )
 

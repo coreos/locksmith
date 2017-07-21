@@ -23,20 +23,25 @@ import (
 )
 
 const (
-	dbusPath                      = "/com/coreos/update1"
-	dbusInterface                 = "com.coreos.update1.Manager"
-	dbusMember                    = "StatusUpdate"
-	dbusMemberInterface           = dbusInterface + "." + dbusMember
-	signalBuffer                  = 32 // TODO(bp): What is a reasonable value here?
+	dbusPath            = "/com/coreos/update1"
+	dbusInterface       = "com.coreos.update1.Manager"
+	dbusMember          = "StatusUpdate"
+	dbusMemberInterface = dbusInterface + "." + dbusMember
+	signalBuffer        = 32 // TODO(bp): What is a reasonable value here?
+	// UpdateStatusUpdatedNeedReboot is the status returned by updateengine on
+	// dbus when a reboot is needed
 	UpdateStatusUpdatedNeedReboot = "UPDATE_STATUS_UPDATED_NEED_REBOOT"
 )
 
+// Client is a dbus client subscribed to updateengine status updates
 type Client struct {
 	conn   *dbus.Conn
 	object *dbus.Object
 	ch     chan *dbus.Signal
 }
 
+// New returns a Client connected to dbus over a private connection with a
+// subscription to updateengine.
 func New() (c *Client, err error) {
 	c = new(Client)
 
@@ -74,6 +79,10 @@ func New() (c *Client, err error) {
 	return c, nil
 }
 
+// RebootNeededSignal watches the updateengine status update subscription and
+// passes the status on the rcvr channel whenever the status update is
+// UpdateStatusUpdatedNeedReboot. The stop channel terminates the function.
+// This function is intended to be called as a goroutine
 func (c *Client) RebootNeededSignal(rcvr chan Status, stop chan struct{}) {
 	for {
 		select {
@@ -89,6 +98,8 @@ func (c *Client) RebootNeededSignal(rcvr chan Status, stop chan struct{}) {
 	}
 }
 
+// GetStatus returns the current status of updateengine
+// it returns an error if there is a problem getting the status from dbus
 func (c *Client) GetStatus() (result Status, err error) {
 	call := c.object.Call(dbusInterface+".GetStatus", 0)
 	err = call.Err

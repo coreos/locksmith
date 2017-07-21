@@ -54,10 +54,28 @@ var (
 )
 
 const (
-	StrategyReboot     = "reboot"
-	StrategyEtcdLock   = "etcd-lock"
+	// The following constants represent the four strategies locksmith can take for
+	// the checking if it is okay for the machine to reboot.
+
+	// StrategyReboot reboots the machine as soon as it is instructed to do so,
+	// without taking a lock.
+	StrategyReboot = "reboot"
+
+	// StrategyEtcdLock connects to the configured etcd and stores the lock in
+	// there. Before it reboots, it aquires the lock, and will not reboot until
+	// it does.
+	StrategyEtcdLock = "etcd-lock"
+
+	// StrategyBestEffort is deprecated and will be removed on 09/14/17
+	// https://coreos.com/blog/locksmith-update-strategy-revision
+	// StrategyBestEffort is currently the default strategy. It heuristically
+	// attempts to find a running etcd cluster and connect to it. If it finds
+	// one, it behaves like StrategyEtcdLock, and if it doesn't, it behaves like
+	// StrategyReboot.
 	StrategyBestEffort = "best-effort"
-	StrategyOff        = "off"
+
+	// StrategyOff causes locksmith to exit without performing any actions
+	StrategyOff = "off"
 )
 
 // attempt to broadcast msg to all lines registered in utmp
