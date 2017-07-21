@@ -14,11 +14,13 @@
 
 package lock
 
+// Lock takes care of locking in generic clients
 type Lock struct {
 	id     string
 	client LockClient
 }
 
+// New returns a new lock with the provided arguments
 func New(id string, client LockClient) (lock *Lock) {
 	return &Lock{id, client}
 }
@@ -41,6 +43,8 @@ func (l *Lock) store(f func(*Semaphore) error) (err error) {
 	return nil
 }
 
+// Get returns the current semaphore value
+// if the underlying client returns an error, Get passes it through
 func (l *Lock) Get() (sem *Semaphore, err error) {
 	sem, err = l.client.Get()
 	if err != nil {
@@ -50,6 +54,10 @@ func (l *Lock) Get() (sem *Semaphore, err error) {
 	return sem, nil
 }
 
+// SetMax sets the maximum number of holders the semaphore will allow
+// it returns the current semaphore and the previous maximum
+// if there is a problem getting or setting the semaphore, this function will
+// pass on errors from the underlying client
 func (l *Lock) SetMax(max int) (sem *Semaphore, oldMax int, err error) {
 	var (
 		semRet *Semaphore
@@ -63,12 +71,19 @@ func (l *Lock) SetMax(max int) (sem *Semaphore, oldMax int, err error) {
 	})
 }
 
+// Lock adds this lock id as a holder to the semaphore
+// it will return an error if there is a problem getting or setting the
+// semaphore, or if the maximum number of holders has been reached, or if a lock
+// with this id is already a holder
 func (l *Lock) Lock() (err error) {
 	return l.store(func(sem *Semaphore) error {
 		return sem.Lock(l.id)
 	})
 }
 
+// Unlock removes this lock id as a holder of the semaphore
+// it returns an error if there is a problem getting or setting the semaphore,
+// or if this lock is not locked.
 func (l *Lock) Unlock() error {
 	return l.store(func(sem *Semaphore) error {
 		return sem.Unlock(l.id)

@@ -18,6 +18,8 @@ import (
 	"fmt"
 )
 
+// Status is a struct containing the information passed by updateengine on every
+// status update.
 type Status struct {
 	LastCheckedTime  int64
 	Progress         float64
@@ -26,6 +28,10 @@ type Status struct {
 	NewSize          int64
 }
 
+// NewStatus creates a new status from a list of fields.
+// this function will panic at runtime if there are less than five elements in
+// the provided list, or if they are not typed int64, float64, string, string,
+// int64 respectively.
 func NewStatus(body []interface{}) (s Status) {
 	s.LastCheckedTime = body[0].(int64)
 	s.Progress = body[1].(float64)
@@ -36,6 +42,9 @@ func NewStatus(body []interface{}) (s Status) {
 	return
 }
 
+// String returns a string representation of the Status struct.
+// It is of the form
+// "LastCheckedTime=%v Progress=%v CurrentOperation=%q NewVersion=%v NewSize=%v"
 func (s *Status) String() string {
 	return fmt.Sprintf("LastCheckedTime=%v Progress=%v CurrentOperation=%q NewVersion=%v NewSize=%v",
 		s.LastCheckedTime,

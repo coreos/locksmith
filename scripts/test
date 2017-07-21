@@ -1,29 +1,23 @@
 #!/bin/bash -e
 
-if [ -z "$PKG" ]; then
-	PKG="./updateengine ./lock ./locksmithctl"
-	GOFMTPATH="$PKG"
-else
-	# strip out leading dotslashes and trailing slashes from PKG=./foo/
-	PKG=${PKG/#./}
-	PKG=${PKG/#\//}
-	PKG=${PKG/%\//}
-	GOFMTPATH="$PKG"
-fi
-
-# split packages into an array and prepend repo to each local package
-split=(${PKG// / })
-TEST=${split[@]/#/github.com/coreos/locksmith/}
+PKGS=$(go list ./... | grep -v vendor)
+FMT_DIRS=$(ls -d */ | grep -v vendor)
+LINTABLE=$(go list ./... | grep -v vendor)
 
 echo "Running tests..."
-go test -i $TEST
-go test ${COVER} $@ ${TEST}
+go test $PKGS -cover
 
-echo "Checking gofmt..."
-fmtRes=$(gofmt -l $GOFMTPATH)
-if [ -n "${fmtRes}" ]; then
+echo "Running vet..."
+go vet $PKGS
+
+echo "Running gofmt..."
+fmtRes=$(gofmt -l $FMT_DIRS)
+if [[ -n "${fmtRes}" ]]; then
 	echo -e "gofmt checking failed:\n${fmtRes}"
-	exit 255
+	exit 2
 fi
+
+echo "Running golint..."
+echo $LINTABLE | xargs -n 1 golint || true
 
 echo "Success"

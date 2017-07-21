@@ -20,6 +20,9 @@ import (
 	"strings"
 )
 
+// MachineID returns the uuid specified `/etc/machine-id`
+// it first prepends the provided root to the filepath
+// if there is an error reading the file it returns the empty string
 func MachineID(root string) string {
 	fullPath := filepath.Join(root, "/etc/machine-id")
 	id, err := ioutil.ReadFile(fullPath)

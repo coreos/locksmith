@@ -27,11 +27,13 @@ type periodicStart struct {
 	secondOfMinute int
 }
 
+// Periodic keeps track of a repeating period of time
 type Periodic struct {
 	start    *periodicStart
 	duration time.Duration
 }
 
+// Period is a span of time from Start to End
 type Period struct {
 	Start time.Time
 	End   time.Time

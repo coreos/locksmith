@@ -43,7 +43,7 @@ var (
 	out *tabwriter.Writer
 
 	commands      []*Command
-	globalFlagSet *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
+	globalFlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
 		Debug        bool
@@ -106,6 +106,7 @@ func init() {
 	}
 }
 
+// Command is the struct representation of a subcommand for a cli.
 type Command struct {
 	Name        string                  // Name of the Command and the string to use to invoke it
 	Summary     string                  // One-sentence summary of what the Command does
