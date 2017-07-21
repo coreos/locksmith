@@ -43,7 +43,7 @@ var (
 	out *tabwriter.Writer
 
 	commands      []*Command
-	globalFlagSet *flag.FlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
+	globalFlagSet = flag.NewFlagSet("locksmithctl", flag.ExitOnError)
 
 	globalFlags = struct {
 		Debug        bool
