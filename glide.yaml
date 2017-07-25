@@ -26,3 +26,7 @@ import:
   version: d513e58596cd55e6f47cd1dcbff6b46035baeccb
   subpackages:
   - context
+- package: github.com/rkt/rkt
+  version: v1.27.0
+  subpackages:
+  - pkg/lock

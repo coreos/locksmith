@@ -1,5 +1,5 @@
-hash: abb7a8bbee7de51be7ffe6ca90d34a7ad8c9245e9e841a88b0a0f8077af20a53
-updated: 2017-07-19T17:05:56.393757741-07:00
+hash: 6e40daef379bd95bc6bdd7372a89a30303cdd0af18b2c55a2a4ec637941b208e
+updated: 2017-07-24T18:11:14.2735175-07:00
 imports:
 - name: github.com/coreos/etcd
   version: bc9ddf260115d2680191c46977ae72b837785472
@@ -21,6 +21,12 @@ imports:
   - capnslog
 - name: github.com/godbus/dbus
   version: 25a4b8ca48c64b3d631110fb74a210f56c401e0b
+- name: github.com/hashicorp/errwrap
+  version: 7554cd9344cec97297fa6649b055a8c98c2a1e55
+- name: github.com/rkt/rkt
+  version: aab7ece56084422864bbfb6d61b47ad35226b96c
+  subpackages:
+  - pkg/lock
 - name: github.com/ugorji/go
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
