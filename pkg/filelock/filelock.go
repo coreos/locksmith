@@ -96,7 +96,7 @@ func (l *UpdateableFileLock) Update(contents io.Reader) error {
 	if err != nil {
 		return err
 	}
-	// Lock overwritten, update our internal copy while we still hold the mutex
+	// Lock overwritten, update our internal state while we still hold the mutex
 	oldLock := l.lock
 	l.lock = newFileLock
 	oldLock.Unlock()
