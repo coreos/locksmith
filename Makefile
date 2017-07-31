@@ -16,7 +16,9 @@ LD_FLAGS="-w -s -extldflags -static"
 .PHONY: all
 all: bin/locksmithctl
 
-bin/%:
+GO_SOURCES := $(shell find . -type f -name "*.go")
+
+bin/%: $(GO_SOURCES)
 	go build -o $@ -ldflags $(LD_FLAGS) $(REPO)/$*
 
 .PHONY: test

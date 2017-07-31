@@ -32,6 +32,7 @@ import (
 	"github.com/coreos/pkg/capnslog"
 
 	"github.com/coreos/locksmith/lock"
+	"github.com/coreos/locksmith/pkg/coordinatorconf"
 	"github.com/coreos/locksmith/pkg/machineid"
 	"github.com/coreos/locksmith/pkg/timeutil"
 	"github.com/coreos/locksmith/updateengine"
@@ -41,6 +42,8 @@ const (
 	initialInterval   = time.Second * 5
 	maxInterval       = time.Minute * 5
 	loginsRebootDelay = time.Minute * 5
+
+	coordinatorName = "locksmithd"
 )
 
 var (
@@ -118,7 +121,7 @@ func expBackoff(interval time.Duration) time.Duration {
 	return interval
 }
 
-func rebootAndSleep(lgn *login1.Conn) {
+func (r rebooter) rebootAndSleep() {
 	// Broadcast a notice, if broadcast found lines to notify, delay the reboot.
 	delaymins := loginsRebootDelay / time.Minute
 	lines := broadcast(fmt.Sprintf("System reboot in %d minutes!", delaymins))
@@ -126,8 +129,11 @@ func rebootAndSleep(lgn *login1.Conn) {
 		dlog.Noticef("Logins detected, delaying reboot for %d minutes.", delaymins)
 		time.Sleep(loginsRebootDelay)
 	}
-	lgn.Reboot(false)
+	r.lgn.Reboot(false)
 	dlog.Info("Reboot sent. Going to sleep.")
+	if err := r.coordinatorConfigUpdater.UpdateState(coordinatorconf.CoordinatorStateRebooting); err != nil {
+		dlog.Errorf("could not update state file to indicate rebooting: %v", err)
+	}
 
 	// Wait a really long time for the reboot to occur.
 	time.Sleep(time.Hour * 24 * 7)
@@ -147,8 +153,7 @@ func (r rebooter) lockAndReboot(lck *lock.Lock) {
 			continue
 		}
 
-		rebootAndSleep(r.lgn)
-
+		r.rebootAndSleep()
 		return
 	}
 }
@@ -200,11 +205,16 @@ func etcdActive() (active bool, name string, err error) {
 }
 
 type rebooter struct {
-	strategy string
-	lgn      *login1.Conn
+	strategy                 string
+	lgn                      *login1.Conn
+	coordinatorConfigUpdater coordinatorconf.CoordinatorConfigUpdater
 }
 
 func (r rebooter) reboot() int {
+	if err := r.coordinatorConfigUpdater.UpdateState(coordinatorconf.CoordinatorStateRebootPlanned); err != nil {
+		dlog.Errorf("could not update state file to indicate reboot planned: %v", err)
+	}
+
 	useLock, err := useLock(r.strategy)
 	if err != nil {
 		dlog.Errorf("Failed to figure out if locksmithd needs to use a lock: %v", err)
@@ -227,7 +237,7 @@ func (r rebooter) reboot() int {
 		r.lockAndReboot(lck)
 	}
 
-	rebootAndSleep(r.lgn)
+	r.rebootAndSleep()
 	dlog.Fatal("Tried to reboot but did not!")
 	return 1
 }
@@ -376,6 +386,11 @@ func runDaemon() int {
 		dlog.Info("No configured reboot window")
 	}
 
+	coordinatorConf, err := coordinatorconf.New(coordinatorName, strategy)
+	if err != nil {
+		dlog.Fatalf("unable to become 'update coordinator': %v", err)
+	}
+
 	shutdown := make(chan os.Signal, 1)
 	stop := make(chan struct{}, 1)
 
@@ -405,7 +420,11 @@ func runDaemon() int {
 	ch := make(chan updateengine.Status, 1)
 	go ue.RebootNeededSignal(ch, stop)
 
-	r := rebooter{strategy, lgn}
+	r := rebooter{
+		strategy: strategy,
+		lgn:      lgn,
+		coordinatorConfigUpdater: coordinatorConf,
+	}
 
 	result, err := ue.GetStatus()
 	if err != nil {
@@ -413,6 +432,9 @@ func runDaemon() int {
 	}
 
 	dlog.Infof("locksmithd starting currentOperation=%q strategy=%q", result.CurrentOperation, strategy)
+	if err := r.coordinatorConfigUpdater.UpdateState(coordinatorconf.CoordinatorStateRunning); err != nil {
+		dlog.Errorf("could not indicate 'running' in state file: %v", err)
+	}
 
 	if result.CurrentOperation != updateengine.UpdateStatusUpdatedNeedReboot {
 		<-ch
