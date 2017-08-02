@@ -85,10 +85,10 @@ func New(name string, strategy string) (CoordinatorConfigUpdater, error) {
 	// Because this file will never be deleted, just blindly creating it on every
 	// run is safe from racing with any deletions. Just create it, then get
 	// locking.
-	if err := os.MkdirAll(filepath.Dir(UpdateCoordinatorConfPath), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(UpdateCoordinatorConfPath), 0755); err != nil {
 		return nil, err
 	}
-	if file, err := os.OpenFile(UpdateCoordinatorConfPath, os.O_CREATE, 0600); err != nil {
+	if file, err := os.OpenFile(UpdateCoordinatorConfPath, os.O_CREATE, 0644); err != nil {
 		return nil, err
 	} else {
 		file.Close()
