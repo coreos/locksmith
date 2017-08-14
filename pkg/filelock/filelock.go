@@ -40,12 +40,17 @@ type UpdateableFileLock struct {
 	lock     *lock.FileLock
 	isLocked bool
 	path     string
+	perms    os.FileMode
 }
 
 // NewExclusiveLock creates a new exclusive filelock.
 // The given filepath must exist.
 func NewExclusiveLock(path string) (*UpdateableFileLock, error) {
 	flock, err := lock.TryExclusiveLock(path, lock.RegFile)
+	if err != nil {
+		return nil, err
+	}
+	fi, err := os.Stat(path)
 	if err != nil {
 		return nil, err
 	}
@@ -60,6 +65,7 @@ func NewExclusiveLock(path string) (*UpdateableFileLock, error) {
 		lock:     flock,
 		path:     path,
 		isLocked: true,
+		perms:    fi.Mode(),
 	}, nil
 }
 
@@ -71,6 +77,10 @@ func (l *UpdateableFileLock) Update(contents io.Reader) error {
 		return err
 	}
 	defer newFile.Close()
+	if err := newFile.Chmod(l.perms); err != nil {
+		os.Remove(newFile.Name())
+		return err
+	}
 
 	_, err = io.Copy(newFile, contents)
 	if err != nil {
