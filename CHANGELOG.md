@@ -1,3 +1,8 @@
+### v0.4.2
+
+Locksmith now uses Restart=on-failure in the systemd unit, so that if the
+reboot strategy is off, it is not constantly restarted.
+
 ### v0.4.1
 
 Locksmith no longer requires update-engine.service and does not have an
