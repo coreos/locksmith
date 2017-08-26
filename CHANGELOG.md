@@ -1,3 +1,11 @@
+### v0.5.0
+
+Locksmith now writes an informational metadata file at the well known path
+`/etc/update-engine/coordinator.conf`.
+
+Other tools that fulfill a similar role may also safely write to that file by
+ensuring an exclusive lock is held on it for the duration of them running.
+
 ### v0.4.2
 
 Locksmith now uses Restart=on-failure in the systemd unit, so that if the
