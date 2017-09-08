@@ -85,22 +85,31 @@ const (
 // returns count of lines successfully opened (and likely broadcasted to)
 func broadcast(msg string) uint {
 	var cnt uint
+
+	// move the utmp file pointer to the beginning of the utmp file
 	C.setutent()
 
+	// loop until we're out of utmp lines
 	for {
+		// read another line from the utmp file
 		var utmp *C.struct_utmp
 		utmp = C.getutent()
 		if utmp == nil {
+			// if no struct was returned, then there are no more lines and we're
+			// done
 			break
 		}
 
+		// get the device name of this user's tty out of the utmp struct
 		line := C.GoString(&utmp.ut_line[0])
 		tty, _ := os.OpenFile("/dev/"+line, os.O_WRONLY, 0)
 		if tty == nil {
-			// ignore errors, this is just a best-effort courtesy notice
+			// if we couldn't open the tty for this user, skip this user
 			continue
 		}
+		// increment the counter of lines successfully opened
 		cnt++
+		// attempt to (asynchronously) write to the tty
 		go func() {
 			fmt.Fprintf(tty, "\r%79s\r\n", " ")
 			fmt.Fprintf(tty, "%-79.79s\007\007\r\n", fmt.Sprintf("Broadcast message from locksmithd at %s:", time.Now()))
@@ -286,7 +295,7 @@ func unlockIfHeld(lck *lock.Lock) error {
 	return err
 }
 
-// unlockHeldLock will loop until it can confirm that any held locks are
+// unlockHeldLocks will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
 func unlockHeldLocks(strategy string, stop chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
