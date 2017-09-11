@@ -1,3 +1,8 @@
+### v0.6.0
+
+Locksmith no longer supports the deprecated `best-effort` strategy. The default
+strategy is now `reboot`.
+
 ### v0.5.0
 
 Locksmith now writes an informational metadata file at the well known path
