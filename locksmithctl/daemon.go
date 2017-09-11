@@ -27,7 +27,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/coreos/go-systemd/dbus"
 	"github.com/coreos/go-systemd/login1"
 	"github.com/coreos/pkg/capnslog"
 
@@ -47,18 +46,13 @@ const (
 )
 
 var (
-	etcdServices = []string{
-		"etcd.service",
-		"etcd2.service",
-	}
-
 	// TODO(mischief): daemon is not really a seperate package. it probably should be.
 	dlog = capnslog.NewPackageLogger("github.com/coreos/locksmith", "daemon")
 )
 
 const (
-	// The following constants represent the four strategies locksmith can take for
-	// the checking if it is okay for the machine to reboot.
+	// The following constants represent the three strategies locksmith can take
+	// for the checking if it is okay for the machine to reboot.
 
 	// StrategyReboot reboots the machine as soon as it is instructed to do so,
 	// without taking a lock.
@@ -69,14 +63,6 @@ const (
 	// it does.
 	StrategyEtcdLock = "etcd-lock"
 
-	// StrategyBestEffort is deprecated and will be removed on 09/14/17
-	// https://coreos.com/blog/locksmith-update-strategy-revision
-	// StrategyBestEffort is currently the default strategy. It heuristically
-	// attempts to find a running etcd cluster and connect to it. If it finds
-	// one, it behaves like StrategyEtcdLock, and if it doesn't, it behaves like
-	// StrategyReboot.
-	StrategyBestEffort = "best-effort"
-
 	// StrategyOff causes locksmith to exit without performing any actions
 	StrategyOff = "off"
 )
@@ -85,22 +71,31 @@ const (
 // returns count of lines successfully opened (and likely broadcasted to)
 func broadcast(msg string) uint {
 	var cnt uint
+
+	// move the utmp file pointer to the beginning of the utmp file
 	C.setutent()
 
+	// loop until we're out of utmp lines
 	for {
+		// read another line from the utmp file
 		var utmp *C.struct_utmp
 		utmp = C.getutent()
 		if utmp == nil {
+			// if no struct was returned, then there are no more lines and we're
+			// done
 			break
 		}
 
+		// get the device name of this user's tty out of the utmp struct
 		line := C.GoString(&utmp.ut_line[0])
 		tty, _ := os.OpenFile("/dev/"+line, os.O_WRONLY, 0)
 		if tty == nil {
-			// ignore errors, this is just a best-effort courtesy notice
+			// if we couldn't open the tty for this user, skip this user
 			continue
 		}
+		// increment the counter of lines successfully opened
 		cnt++
+		// attempt to (asynchronously) write to the tty
 		go func() {
 			fmt.Fprintf(tty, "\r%79s\r\n", " ")
 			fmt.Fprintf(tty, "%-79.79s\007\007\r\n", fmt.Sprintf("Broadcast message from locksmithd at %s:", time.Now()))
@@ -174,36 +169,6 @@ func setupLock() (lck *lock.Lock, err error) {
 	return lck, nil
 }
 
-// etcdActive returns true if etcd is not in an inactive state according to systemd.
-func etcdActive() (active bool, name string, err error) {
-	active = false
-	name = ""
-
-	sys, err := dbus.New()
-	if err != nil {
-		return
-	}
-	defer sys.Close()
-
-	for _, service := range etcdServices {
-		prop, err := sys.GetUnitProperty(service, "ActiveState")
-		if err != nil {
-			continue
-		}
-
-		switch prop.Value.Value().(string) {
-		case "inactive":
-			continue
-		default:
-			active = true
-			name = service
-			break
-		}
-	}
-
-	return
-}
-
 type rebooter struct {
 	strategy                 string
 	lgn                      *login1.Conn
@@ -215,13 +180,10 @@ func (r rebooter) reboot() int {
 		dlog.Errorf("could not update state file to indicate reboot planned: %v", err)
 	}
 
-	useLock, err := useLock(r.strategy)
-	if err != nil {
-		dlog.Errorf("Failed to figure out if locksmithd needs to use a lock: %v", err)
-		return 1
-	}
-
-	if useLock {
+	switch r.strategy {
+	case StrategyEtcdLock:
+		// If the strategy is etcd-lock, then a lock should be acquired in etcd
+		// before rebooting
 		lck, err := setupLock()
 		if err != nil {
 			dlog.Errorf("Failed to set up lock: %v", err)
@@ -235,42 +197,22 @@ func (r rebooter) reboot() int {
 		}
 
 		r.lockAndReboot(lck)
+	case StrategyReboot:
+		// If the strategy is reboot, no extra work must be done before
+		// rebooting
+	case StrategyOff:
+		// We should never get here with the off strategy, but in case we do
+		// print a more descriptive error message
+		dlog.Error("can't reboot for strategy 'off'")
+		return 1
+	default:
+		dlog.Errorf("unknown strategy: %s", r.strategy)
+		return 1
 	}
 
 	r.rebootAndSleep()
 	dlog.Fatal("Tried to reboot but did not!")
 	return 1
-}
-
-// useLock returns whether locksmith should attempt to take a lock before
-// rebooting or release a lock afterwards, based on the given strategy.
-// If strategy is set to best effort, this will be dependent on whether the
-// local instance of etcd is active. Otherwise, the lock will always be
-// attempted (in the case of strategy = etcd lock) or never be attempted (in
-// the case of strategy = reboot)
-func useLock(strategy string) (useLock bool, err error) {
-	switch strategy {
-	case StrategyBestEffort:
-		active, name, err := etcdActive()
-		if err != nil {
-			return false, err
-		}
-		if active {
-			dlog.Infof("%s is active", name)
-			useLock = true
-		} else {
-			dlog.Infof("%v are inactive", etcdServices)
-			useLock = false
-		}
-	case StrategyEtcdLock:
-		useLock = true
-	case StrategyReboot:
-		useLock = false
-	default:
-		return false, fmt.Errorf("unknown strategy: %s", strategy)
-	}
-
-	return useLock, nil
 }
 
 // unlockIfHeld will unlock a lock, if it is held by this machine, or return an error.
@@ -286,7 +228,7 @@ func unlockIfHeld(lck *lock.Lock) error {
 	return err
 }
 
-// unlockHeldLock will loop until it can confirm that any held locks are
+// unlockHeldLocks will loop until it can confirm that any held locks are
 // released or a stop signal is sent.
 func unlockHeldLocks(strategy string, stop chan struct{}, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -297,20 +239,6 @@ func unlockHeldLocks(strategy string, stop chan struct{}, wg *sync.WaitGroup) {
 		case <-stop:
 			return
 		case <-time.After(interval):
-			// Here we assume that the strategy used by locksmith
-			// is consistent with that used before the previous
-			// reboot (if any), and use that to decide whether to
-			// attempt to unlock.
-			shouldUnlock, err := useLock(strategy)
-			if err != nil {
-				reason = fmt.Sprintf("error checking whether lock should be released: %v", err)
-				break
-			}
-			if !shouldUnlock {
-				reason = fmt.Sprintf("%v are inactive", etcdServices)
-				break
-			}
-
 			lck, err := setupLock()
 			if err != nil {
 				reason = "error setting up lock: " + err.Error()
@@ -338,14 +266,7 @@ func runDaemon() int {
 	strategy := os.Getenv("REBOOT_STRATEGY")
 
 	if strategy == "" {
-		strategy = StrategyBestEffort
-	}
-
-	// XXX: complain loudly if besteffort is used
-	if strategy == StrategyBestEffort {
-		dlog.Errorf("Reboot strategy %q is deprecated and will be removed in the future.", strategy)
-		dlog.Errorf("Please explicitly set the reboot strategy to one of %v", []string{StrategyOff, StrategyReboot, StrategyEtcdLock})
-		dlog.Error("See https://coreos.com/os/docs/latest/update-strategies.html for details on configuring reboot strategies.")
+		strategy = StrategyReboot
 	}
 
 	if strategy == StrategyOff {
@@ -412,7 +333,7 @@ func runDaemon() int {
 	}
 
 	var wg sync.WaitGroup
-	if strategy != StrategyReboot {
+	if strategy == StrategyEtcdLock {
 		wg.Add(1)
 		go unlockHeldLocks(strategy, stop, &wg)
 	}
