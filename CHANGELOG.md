@@ -1,3 +1,8 @@
+### v0.6.1
+
+Locksmith now sequences itself after update_engine, avoiding an exit and
+relaunch if update_engine has not yet started.
+
 ### v0.6.0
 
 Locksmith no longer supports the deprecated `best-effort` strategy. The default
