@@ -19,7 +19,7 @@ all: bin/locksmithctl
 GO_SOURCES := $(shell find . -type f -name "*.go")
 
 bin/%: $(GO_SOURCES)
-	go build -o $@ -ldflags $(LD_FLAGS) $(REPO)/$*
+	$(Q)go build -o $@ -ldflags $(LD_FLAGS) $(REPO)/$*
 
 .PHONY: test
 test:
