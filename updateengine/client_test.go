@@ -93,6 +93,20 @@ func TestRebootNeededSignal(t *testing.T) {
 		t.Fatal("RebootNeededSignal stopped prematurely")
 	}
 
+	c.ch <- nil
+
+	time.Sleep(10 * time.Millisecond)
+
+	select {
+	case stat := <-r:
+		t.Fatalf("unexpected status on nil signal: %#v", stat)
+	default:
+	}
+
+	if done {
+		t.Fatal("RebootNeededSignal stopped prematurely")
+	}
+
 	close(s)
 
 	time.Sleep(10 * time.Millisecond)

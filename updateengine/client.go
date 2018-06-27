@@ -89,7 +89,10 @@ func (c *Client) RebootNeededSignal(rcvr chan Status, stop chan struct{}) {
 		case <-stop:
 			return
 		case signal := <-c.ch:
-			s := NewStatus(signal.Body)
+			s, err := TryNewStatus(signal)
+			if err != nil {
+				continue
+			}
 			println(s.String())
 			if s.CurrentOperation == UpdateStatusUpdatedNeedReboot {
 				rcvr <- s

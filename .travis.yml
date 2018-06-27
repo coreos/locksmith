@@ -3,8 +3,8 @@ language: go
 matrix:
   include:
     - go: 1.6.x
-    - go: 1.7.x
-    - go: 1.8.x
+    - go: 1.9.x
+    - go: 1.10.x
   allow_failures:
     - go: tip
 
@@ -12,4 +12,3 @@ install: true
 
 script:
  - make test
-

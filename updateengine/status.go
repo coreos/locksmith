@@ -15,7 +15,10 @@
 package updateengine
 
 import (
+	"errors"
 	"fmt"
+
+	"github.com/godbus/dbus"
 )
 
 // Status is a struct containing the information passed by updateengine on every
@@ -26,6 +29,54 @@ type Status struct {
 	CurrentOperation string
 	NewVersion       string
 	NewSize          int64
+}
+
+var (
+	errStatusNil    = errors.New("dbus signal is nil")
+	errStatusLength = errors.New("signal body has insufficient length")
+	errStatusType   = errors.New("signal body has incorrect type")
+)
+
+// TryNewStatus attempts to create a new Status from a list of fields in
+// the dbus.Signal. An error is returned if the signal is nil, has less fields
+// than required, or has a field of incorrect type (types must be int64, float64,
+// string, string, int64 respectively). If successful, the new status is returned.
+func TryNewStatus(signal *dbus.Signal) (Status, error) {
+	if signal == nil {
+		return Status{}, errStatusNil
+	}
+
+	if len(signal.Body) < 5 {
+		return Status{}, errStatusLength
+	}
+
+	var ok bool
+	_, ok = signal.Body[0].(int64)
+	if !ok {
+		return Status{}, errStatusType
+	}
+
+	_, ok = signal.Body[1].(float64)
+	if !ok {
+		return Status{}, errStatusType
+	}
+
+	_, ok = signal.Body[2].(string)
+	if !ok {
+		return Status{}, errStatusType
+	}
+
+	_, ok = signal.Body[3].(string)
+	if !ok {
+		return Status{}, errStatusType
+	}
+
+	_, ok = signal.Body[4].(int64)
+	if !ok {
+		return Status{}, errStatusType
+	}
+
+	return NewStatus(signal.Body), nil
 }
 
 // NewStatus creates a new status from a list of fields.
