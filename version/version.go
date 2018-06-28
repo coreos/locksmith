@@ -16,5 +16,5 @@ package version
 
 const (
 	// Version is the version of locksmithctl that this is
-	Version = "0.6.2"
+	Version = "0.6.2+git"
 )
