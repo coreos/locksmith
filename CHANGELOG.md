@@ -1,3 +1,9 @@
+### v0.6.2
+
+Locksmith now internally handles DBus signals in a safer way, with additional
+checks on unexpected/malformed ones. This avoids a panic in the daemon component,
+which was frequently occurring on shutdown.
+
 ### v0.6.1
 
 Locksmith now sequences itself after update_engine, avoiding an exit and
