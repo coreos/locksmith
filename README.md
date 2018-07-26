@@ -116,7 +116,8 @@ environment variable.
 reboot windows work with any reboot strategy.
 
 The reboot window is configured through two environment variables,
-`LOCKSMITHD_REBOOT_WINDOW_START` and `LOCKSMITHD_REBOOT_WINDOW_LENGTH`. Here is
+`LOCKSMITHD_REBOOT_WINDOW_START` and `LOCKSMITHD_REBOOT_WINDOW_LENGTH`. Note that
+`REBOOT_WINDOW_START` and `REBOOT_WINDOW_LENGTH` are also acceptable. Here is
 an example configuration:
 
 ```
@@ -125,7 +126,6 @@ LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h
 ```
 
 This would configure `locksmithd` to only reboot between 2pm and 3pm. Optionally,
-
 a day of week may be specified for the start of the window:
 
 ```
@@ -144,7 +144,7 @@ function.
 
 [time.ParseDuration]: http://godoc.org/time#ParseDuration
 
-## Implementation details 
+## Implementation details
 
 The following section describes how locksmith works under the hood.
 
@@ -156,7 +156,7 @@ If a non-default group name is used, the etcd key will be
 `coreos.com/updateengine/rebootlock/groups/$groupname/semaphore`.
 
 The semaphore is a JSON document, describing a simple semaphore, that clients [swap][cas]
-to take the lock. 
+to take the lock.
 
 When it is first created it will be initialized like so:
 
